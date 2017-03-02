@@ -222,7 +222,7 @@ public class PreviewHttpHandler extends AbstractLogHandler {
   private ProgramRunId getProgramRunId(String namespaceId, String previewId) throws Exception {
     ProgramRunId runId = previewManager.getRunner(new ApplicationId(namespaceId, previewId)).getProgramRunId();
     if (runId == null) {
-      throw new BadRequestException(String.format("Preview run with id %s does not start successfully.", previewId));
+      throw new BadRequestException(String.format("Preview run with id %s did not start successfully.", previewId));
     }
     return runId;
   }
