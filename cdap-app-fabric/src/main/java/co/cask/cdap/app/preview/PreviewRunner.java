@@ -17,12 +17,14 @@
 package co.cask.cdap.app.preview;
 
 import co.cask.cdap.api.metrics.MetricTimeSeries;
+import co.cask.cdap.internal.app.store.RunRecordMeta;
+import co.cask.cdap.proto.id.ProgramRunId;
 import com.google.gson.JsonElement;
-import org.apache.twill.api.logging.LogEntry;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Interface responsible for managing the lifecycle of a single preview application
@@ -69,8 +71,16 @@ public interface PreviewRunner {
   List<MetricTimeSeries> getMetrics();
 
   /**
-   * Get the logs for the preview run represented by this {@link PreviewRunner}.
-   * @return the logs
+   * Get the program run id of the preview run
+   * @return the {@link ProgramRunId} associated with the preview
    */
-  List<LogEntry> getLogs();
+  @Nullable
+  ProgramRunId getProgramRunId();
+
+  /**
+   * Get the run record of the preview run
+   * @return the {@link RunRecordMeta} associated with the preview
+   */
+  @Nullable
+  RunRecordMeta getRunRecord();
 }
