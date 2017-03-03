@@ -220,18 +220,10 @@ public class PreviewHttpHandler extends AbstractLogHandler {
 
 
   private ProgramRunId getProgramRunId(String namespaceId, String previewId) throws Exception {
-    ProgramRunId runId = previewManager.getRunner(new ApplicationId(namespaceId, previewId)).getProgramRunId();
-    if (runId == null) {
-      throw new BadRequestException(String.format("Preview run with id %s did not start successfully.", previewId));
-    }
-    return runId;
+     return previewManager.getRunner(new ApplicationId(namespaceId, previewId)).getProgramRunId();
   }
 
   private RunRecordMeta getRunRecord(String namespaceId, String previewId) throws Exception {
-    RunRecordMeta runRecordMeta = previewManager.getRunner(new ApplicationId(namespaceId, previewId)).getRunRecord();
-    if (runRecordMeta == null) {
-      throw new BadRequestException(String.format("Run record is not found for the preview run: %s ", previewId));
-    }
-    return runRecordMeta;
+    return previewManager.getRunner(new ApplicationId(namespaceId, previewId)).getRunRecord();
   }
 }

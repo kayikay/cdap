@@ -24,7 +24,6 @@ import com.google.gson.JsonElement;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * Interface responsible for managing the lifecycle of a single preview application
@@ -74,13 +73,11 @@ public interface PreviewRunner {
    * Get the program run id of the preview run
    * @return the {@link ProgramRunId} associated with the preview
    */
-  @Nullable
   ProgramRunId getProgramRunId();
 
   /**
    * Get the run record of the preview run
    * @return the {@link RunRecordMeta} associated with the preview
    */
-  @Nullable
   RunRecordMeta getRunRecord();
 }

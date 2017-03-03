@@ -151,15 +151,7 @@ public class DefaultPreviewManager implements PreviewManager {
           if (application == null) {
             return;
           }
-          java.nio.file.Path previewDirPath = Paths.get(cConf.get(Constants.CFG_LOCAL_DATA_DIR),
-                                                        "preview", application.getApplication()).toAbsolutePath();
-
-          try {
-            DataTracerFactoryProvider.removeDataTracerFactory(application);
-            DirUtils.deleteDirectoryContents(previewDirPath.toFile());
-          } catch (IOException e) {
-            LOG.warn("Error deleting the preview directory {}", previewDirPath, e);
-          }
+          removePreviewDir(application);
         }
       })
       .build();
@@ -172,12 +164,18 @@ public class DefaultPreviewManager implements PreviewManager {
 
     ApplicationId previewApp = namespace.app(PREFIX + System.currentTimeMillis());
     Injector injector = createPreviewInjector(previewApp, realDatasets);
-    appInjectors.put(previewApp, injector);
     PreviewRunner runner = injector.getInstance(PreviewRunner.class);
     if (runner instanceof Service) {
       ((Service) runner).startAndWait();
     }
-    runner.startPreview(new PreviewRequest<>(getProgramIdFromRequest(previewApp, appRequest), appRequest));
+    try {
+      runner.startPreview(new PreviewRequest<>(getProgramIdFromRequest(previewApp, appRequest), appRequest));
+    } catch (Exception e) {
+      LOG.error("Failed to start the preview run");
+      removePreviewDir(previewApp);
+      throw e;
+    }
+    appInjectors.put(previewApp, injector);
     return previewApp;
   }
 
@@ -256,5 +254,17 @@ public class DefaultPreviewManager implements PreviewManager {
     }
 
     return preview.program(programType, programName);
+  }
+
+  private void removePreviewDir(ApplicationId application) {
+    java.nio.file.Path previewDirPath = Paths.get(cConf.get(Constants.CFG_LOCAL_DATA_DIR),
+                                                  "preview", application.getApplication()).toAbsolutePath();
+
+    try {
+      DataTracerFactoryProvider.removeDataTracerFactory(application);
+      DirUtils.deleteDirectoryContents(previewDirPath.toFile());
+    } catch (IOException e) {
+      LOG.warn("Error deleting the preview directory {}", previewDirPath, e);
+    }
   }
 }
