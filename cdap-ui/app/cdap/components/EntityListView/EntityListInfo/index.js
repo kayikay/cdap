@@ -17,6 +17,7 @@
 import React, {PropTypes, Component} from 'react';
 import T from 'i18n-react';
 import ReactPaginate from 'react-paginate';
+import NamespaceStore from 'services/NamespaceStore';
 
 require('./EntityListInfo.scss');
 
@@ -63,7 +64,8 @@ export default class EntityListInfo extends Component {
     );
   }
   render() {
-    let title = T.translate('features.EntityListView.Info.title', {namespace: this.props.namespace});
+    let namespace = NamespaceStore.getState().selectedNamespace;
+    let title = T.translate('features.EntityListView.Info.title', {namespace});
 
     return (
       <div className={this.props.className}>
@@ -85,7 +87,6 @@ export default class EntityListInfo extends Component {
 
 EntityListInfo.propTypes = {
   className: PropTypes.string,
-  namespace: PropTypes.string,
   numberOfPages: PropTypes.number,
   numberOfEntities: PropTypes.number,
   currentPage: PropTypes.number,
@@ -95,7 +96,6 @@ EntityListInfo.propTypes = {
 
 EntityListInfo.defaultProps = {
   className: '',
-  namespace: '',
   numberOfPages: 1,
   numberOfEntities: 0,
   currentPage: 1,
