@@ -64,25 +64,27 @@ export default class EntityListView extends Component {
   render() {
     let namespace = NamespaceStore.getState().selectedNamespace;
     return (
-      <div className="entity-list-view">
+      <div>
         <EntityListHeader />
-        <EntityListInfo
-          className="entity-list-info"
-          namespace={namespace}
-          numberOfEntities={this.state.total}
-          numberOfPages={this.state.total / this.state.limit}
-          currentPage={1}
-          onPageChange={() => console.log('On Page change')}
-        />
-        <ListViewHeader/>
-        <div className="entities-container">
-          <HomeListView
-            loading={this.state.loading}
-            className={classNames("home-list-view-container", {"show-overview-main-container": !isNil(this.state.selectedEntity)})}
-            list={this.state.entities}
-            pageSize={this.state.limit}
-          />
-        </div>
+          <div className="entity-list-view">
+            <EntityListInfo
+              className="entity-list-info"
+              namespace={namespace}
+              numberOfEntities={this.state.total}
+              numberOfPages={this.state.total / this.state.limit}
+              currentPage={1}
+              onPageChange={() => console.log('On Page change')}
+            />
+            <ListViewHeader/>
+            <div className="entities-container">
+              <HomeListView
+                loading={this.state.loading}
+                className={classNames("home-list-view-container", {"show-overview-main-container": !isNil(this.state.selectedEntity)})}
+                list={this.state.entities}
+                pageSize={this.state.limit}
+              />
+            </div>
+          </div>
       </div>
     );
   }
