@@ -18,7 +18,6 @@ import React, {PropTypes, Component} from 'react';
 import EntityCard from 'components/EntityCard';
 import classnames from 'classnames';
 import {objectQuery} from 'services/helpers';
-import T from 'i18n-react';
 import JustAddedSection from 'components/EntityListView/JustAddedSection';
 import NoEntitiesMessage from 'components/EntityListView/NoEntitiesMessage';
 
@@ -55,60 +54,6 @@ export default class HomeListView extends Component {
       this.props.onEntityClick(entity);
     }
   }
-
-  filtersAreApplied() {
-    return this.props.activeFilter.length > 0 && this.props.activeFilter.length < this.props.filterOptions.length;
-  }
-
-  clearSearchAndFilters() {
-    this.props.onSearch('');
-    this.props.onFiltersCleared();
-  }
-
-  getActiveFilterStrings() {
-    return this.props.activeFilter.map(filter => {
-      if (filter === 'app') {
-        filter = 'application';
-      }
-      return T.translate(`commons.entity.${filter}.plural`);
-    });
-  }
-
-  getSubtitle() {
-    let text = {
-      search: T.translate('features.EntityListView.Info.subtitle.search'),
-      filteredBy: T.translate('features.EntityListView.Info.subtitle.filteredBy'),
-      sortedBy: T.translate('features.EntityListView.Info.subtitle.sortedBy'),
-      displayAll: T.translate('features.EntityListView.Info.subtitle.displayAll'),
-      displaySome: T.translate('features.EntityListView.Info.subtitle.displaySome'),
-    };
-
-    let filtersAreApplied = this.filtersAreApplied();
-    let activeFilters = this.getActiveFilterStrings();
-    let activeFilterString = activeFilters.join(', ');
-    let activeSort = this.props.activeSort;
-    let searchText = this.props.searchText;
-    let subtitle;
-
-    if (searchText) {
-      subtitle = `${text.search} "${searchText}"`;
-      if (filtersAreApplied) {
-        subtitle += `, ${text.filteredBy} ${activeFilterString}`;
-      }
-    } else {
-      if (!filtersAreApplied) {
-        subtitle = `${text.displayAll}`;
-      } else {
-        subtitle = `${text.displaySome} ${activeFilterString}`;
-      }
-      if (activeSort) {
-        subtitle += `, ${text.sortedBy} ${activeSort.displayName}`;
-      }
-    }
-
-    return subtitle;
-  }
-
   render() {
     let content;
     if (this.state.loading) {
@@ -150,7 +95,7 @@ export default class HomeListView extends Component {
     return (
       <div className={this.props.className}>
         {
-          this.props.searchText || !this.props.numColumns ?
+          !this.props.showJustAddedSection ?
             null
           :
             (<JustAddedSection
@@ -162,13 +107,6 @@ export default class HomeListView extends Component {
               limit={this.props.numColumns}
             />)
         }
-
-        <div className="subtitle">
-          <span>
-            {this.getSubtitle()}
-          </span>
-        </div>
-
         <div className="entities-all-list-container">
           {content}
         </div>
@@ -182,15 +120,10 @@ HomeListView.propTypes = {
   loading: PropTypes.bool,
   onEntityClick: PropTypes.func,
   onUpdate: PropTypes.func,
-  onFastActionSuccess: PropTypes.func,
-  onSearch: PropTypes.func,
-  onFiltersCleared: PropTypes.func,
+  onFastActionSuccess: PropTypes.func, // FIXME: This is not right. I don't think onFastActionSuccess is being used correct here. Not able to reason.
   className: PropTypes.string,
   activeEntity: PropTypes.object,
   currentPage: PropTypes.number,
-  activeFilter: PropTypes.array,
-  filterOptions: PropTypes.array,
-  activeSort: PropTypes.obj,
-  searchText: PropTypes.string,
-  numColumns: PropTypes.number
+  numColumns: PropTypes.number,
+  showJustAddedSection: PropTypes.bool
 };
