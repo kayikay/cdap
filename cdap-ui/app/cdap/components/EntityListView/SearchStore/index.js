@@ -16,7 +16,14 @@
 
 import {combineReducers, createStore} from 'redux';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
-import {DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_FILTER_OPTIONS, DEFAULT_SEARCH_FILTERS, DEFAULT_SEARCH_SORT, DEFAULT_SEARCH_SORT_OPTIONS} from 'components/EntityListView/SearchStore/SearchConstants';
+import {
+  DEFAULT_SEARCH_QUERY,
+  DEFAULT_SEARCH_FILTER_OPTIONS,
+  DEFAULT_SEARCH_FILTERS,
+  DEFAULT_SEARCH_SORT,
+  DEFAULT_SEARCH_SORT_OPTIONS,
+  DEFAULT_SEARCH_PAGE_SIZE
+} from 'components/EntityListView/SearchStore/SearchConstants';
 import isEmpty from 'lodash/isEmpty';
 import isNil from 'lodash/isNil';
 
@@ -33,8 +40,10 @@ const defaultSearchState = {
   query: DEFAULT_SEARCH_QUERY,
 
   offset: 0,
-  limit: 30,
+  limit: DEFAULT_SEARCH_PAGE_SIZE,
   numCursors: 10,
+  total: 0,
+  currentPage: 1,
 
   loading: false,
   results: []
@@ -42,6 +51,53 @@ const defaultSearchState = {
 
 const defaultInitialState = {
   search: defaultSearchState
+};
+
+const getPageSize = (element) => {
+    // different screen sizes
+    // consistent with media queries in style sheet
+    const sevenColumnWidth = 1701;
+    const sixColumnWidth = 1601;
+    const fiveColumnWidth = 1201;
+    const fourColumnWidth = 993;
+    const threeColumnWidth = 768;
+
+    // 140 = cardHeight (128) + (5 x 2 top bottom margins) + (1 x 2 border widths)
+    const cardHeightWithMarginAndBorder = 140;
+
+    let entityListViewEle = element;
+
+    if (!entityListViewEle.length) {
+      return;
+    }
+
+    // Subtract 65px to account for entity-list-info's height (45px) and paddings (20px)
+    // minus 10px of padding from top and bottom (10px each)
+    let containerHeight = entityListViewEle[0].offsetHeight - 65 - 10;
+    let containerWidth = entityListViewEle[0].offsetWidth;
+    let numColumns = 1;
+
+    // different screen sizes
+    // consistent with media queries in style sheet
+    if (containerWidth >= sevenColumnWidth) {
+      numColumns = 7;
+    } else if (containerWidth >= sixColumnWidth && containerWidth < sevenColumnWidth) {
+      numColumns = 6;
+    } else if (containerWidth >= fiveColumnWidth && containerWidth < sixColumnWidth) {
+      numColumns = 5;
+    } else if (containerWidth >= fourColumnWidth && containerWidth < fiveColumnWidth) {
+      numColumns = 4;
+    } else if (containerWidth >= threeColumnWidth && containerWidth < fourColumnWidth) {
+      numColumns = 3;
+    }
+
+    let numRows = Math.floor(containerHeight / cardHeightWithMarginAndBorder);
+
+    // We must have one column and one row at the very least
+    if (numRows === 0) {
+      numRows = 1;
+    }
+    return numColumns * numRows;
 };
 
 const search = (state = defaultSearchState, action = defaultAction) => {
@@ -78,6 +134,15 @@ const search = (state = defaultSearchState, action = defaultAction) => {
     case SearchStoreActions.LOADING:
       return Object.assign({}, state, {
         loading: !state.loading
+      });
+    case SearchStoreActions.SETPAGESIZE:
+      return Object.assign({}, state, {
+        limit: getPageSize(action.payload.element)
+      });
+    case SearchStoreActions.SETCURRENTPAGE:
+      return Object.assign({}, state, {
+        currentPage: action.payload.currentPage,
+        offset: action.payload.offset
       });
     default:
       return state;

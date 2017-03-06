@@ -104,7 +104,7 @@ export default class HomeListView extends Component {
               onUpdate={this.props.onUpdate}
               activeEntity={this.props.activeEntity}
               currentPage={this.props.currentPage}
-              limit={this.props.numColumns}
+              limit={this.props.pageSize}
             />)
         }
         <div className="entities-all-list-container">
@@ -124,6 +124,6 @@ HomeListView.propTypes = {
   className: PropTypes.string,
   activeEntity: PropTypes.object,
   currentPage: PropTypes.number,
-  numColumns: PropTypes.number,
+  pageSize: PropTypes.number,
   showJustAddedSection: PropTypes.bool
 };

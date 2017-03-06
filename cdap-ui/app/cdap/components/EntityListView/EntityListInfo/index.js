@@ -18,6 +18,10 @@ import React, {PropTypes, Component} from 'react';
 import T from 'i18n-react';
 import ReactPaginate from 'react-paginate';
 import NamespaceStore from 'services/NamespaceStore';
+import SearchStore from 'components/EntityListView/SearchStore';
+import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
+import {search} from 'components/EntityListView/SearchStore/ActionCreator';
+import {DEFAULT_SEARCH_PAGE_SIZE} from 'components/EntityListView/SearchStore/SearchConstants';
 
 require('./EntityListInfo.scss');
 
@@ -26,8 +30,16 @@ export default class EntityListInfo extends Component {
     super(props);
   }
   handlePageChange(data) {
-    let clickedIndex = data.selected+1;
-    this.props.onPageChange(clickedIndex);
+    let currentPage = data.selected + 1;
+    let offset = data.selected * DEFAULT_SEARCH_PAGE_SIZE;
+    SearchStore.dispatch({
+      type: SearchStoreActions.SETCURRENTPAGE,
+      payload: {
+        currentPage,
+        offset
+      }
+    });
+    search();
   }
 
   showPagination() {

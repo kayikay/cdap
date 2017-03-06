@@ -25,24 +25,34 @@ import classNames from 'classNames';
 import EntityListHeader from 'components/EntityListView/EntityListHeader';
 import EntityListInfo from 'components/EntityListView/EntityListInfo';
 import NamespaceStore from 'services/NamespaceStore';
+import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
+import {DEFAULT_SEARCH_PAGE_SIZE} from 'components/EntityListView/SearchStore/SearchConstants';
 
 export default class EntityListView extends Component {
   constructor(props) {
     super(props);
     this.state = {
       entities: [],
-      loading: false
+      loading: false,
+      limit: DEFAULT_SEARCH_PAGE_SIZE,
+      total: 0
     };
   }
   componentDidMount() {
     this.searchStoreSubscription = SearchStore.subscribe(() => {
-      let searchState = SearchStore.getState();
-      let entities = searchState.search.results;
-      let loading = searchState.search.loading;
+      let {results:entities, loading, limit, total} = SearchStore.getState().search;
       this.setState({
         entities,
-        loading
+        loading,
+        limit,
+        total
       });
+    });
+    SearchStore.dispatch({
+      type: SearchStoreActions.SETPAGESIZE,
+      payload: {
+        element: document.getElementsByClassName('entity-list-view')
+      }
     });
     search();
   }
@@ -60,7 +70,7 @@ export default class EntityListView extends Component {
           className="entity-list-info"
           namespace={namespace}
           numberOfEntities={this.state.total}
-          numberOfPages={1}
+          numberOfPages={this.state.total / this.state.limit}
           currentPage={1}
           onPageChange={() => console.log('On Page change')}
         />
@@ -70,6 +80,7 @@ export default class EntityListView extends Component {
             loading={this.state.loading}
             className={classNames("home-list-view-container", {"show-overview-main-container": !isNil(this.state.selectedEntity)})}
             list={this.state.entities}
+            pageSize={this.state.limit}
           />
         </div>
       </div>
