@@ -102,7 +102,6 @@ EntityListInfo.propTypes = {
   numberOfPages: PropTypes.number,
   numberOfEntities: PropTypes.number,
   currentPage: PropTypes.number,
-  onPageChange: PropTypes.func,
   allEntitiesFetched: PropTypes.bool
 };
 
@@ -111,6 +110,5 @@ EntityListInfo.defaultProps = {
   numberOfPages: 1,
   numberOfEntities: 0,
   currentPage: 1,
-  onPageChange: () => {},
   allEntitiesFetched: false
 };

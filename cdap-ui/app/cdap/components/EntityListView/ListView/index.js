@@ -20,6 +20,8 @@ import classnames from 'classnames';
 import {objectQuery} from 'services/helpers';
 import JustAddedSection from 'components/EntityListView/JustAddedSection';
 import NoEntitiesMessage from 'components/EntityListView/NoEntitiesMessage';
+import SearchStore from 'components/EntityListView/SearchStore';
+import ListViewHeader from 'components/EntityListView/ListViewHeader';
 
 export default class HomeListView extends Component {
   constructor(props) {
@@ -92,6 +94,7 @@ export default class HomeListView extends Component {
       });
     }
 
+    let currentPage = SearchStore.getState().search.currentPage;
     return (
       <div className={this.props.className}>
         {
@@ -103,10 +106,11 @@ export default class HomeListView extends Component {
               onFastActionSuccess={this.props.onFastActionSuccess}
               onUpdate={this.props.onUpdate}
               activeEntity={this.props.activeEntity}
-              currentPage={this.props.currentPage}
+              currentPage={currentPage}
               limit={this.props.pageSize}
             />)
         }
+        <ListViewHeader/>
         <div className="entities-all-list-container">
           {content}
         </div>
@@ -123,7 +127,6 @@ HomeListView.propTypes = {
   onFastActionSuccess: PropTypes.func, // FIXME: This is not right. I don't think onFastActionSuccess is being used correct here. Not able to reason.
   className: PropTypes.string,
   activeEntity: PropTypes.object,
-  currentPage: PropTypes.number,
   pageSize: PropTypes.number,
   showJustAddedSection: PropTypes.bool
 };
