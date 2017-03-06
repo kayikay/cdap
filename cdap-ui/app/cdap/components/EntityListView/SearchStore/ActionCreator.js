@@ -1,0 +1,84 @@
+/*
+ * Copyright © 2017 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*/
+
+import {MySearchApi} from 'api/search';
+import NamespaceStore from 'services/NamespaceStore';
+import {parseMetadata} from 'services/metadata-parser';
+import shortid from 'shortid';
+import SearchStore from 'components/EntityListView/SearchStore';
+import SearchStoreAction from 'components/EntityListView/SearchStore/SearchStoreActions';
+import ExploreTablesStore from 'services/ExploreTables/ExploreTablesStore';
+import {fetchTables} from 'services/ExploreTables/ActionCreator';
+import {DEFAULT_SEARCH_QUERY} from 'components/EntityListView/SearchStore/SearchConstants';
+
+const search = () => {
+  let namespace = NamespaceStore.getState().selectedNamespace;
+  let {
+    offset,
+    numCursors,
+    limit,
+    activeFilters,
+    activeSort,
+    query
+  } = SearchStore.getState().search;
+
+  let params = {
+    namespace: namespace,
+    target: activeFilters,
+    limit,
+    offset,
+    numCursors,
+    sort: activeSort.fullSort,
+    query
+  };
+  if (query !== DEFAULT_SEARCH_QUERY) {
+    delete params.sort;
+    delete params.numCursors;
+    params.query = params.query + '*';
+  }
+
+  ExploreTablesStore.dispatch(
+    fetchTables(namespace)
+  );
+
+  SearchStore.dispatch({
+    type: SearchStoreAction.LOADING
+  });
+
+  MySearchApi.search(params)
+    .map((res) => {
+      return Object.assign({}, {
+        total: res.total,
+        limit: res.limit,
+        results: res.results
+          .map(parseMetadata)
+          .map((entity) => {
+            entity.uniqueId = shortid.generate();
+            return entity;
+          })
+      });
+    })
+    .subscribe((response) => {
+      SearchStore.dispatch({
+        type: SearchStoreAction.SETRESULTS,
+        payload: {response}
+      });
+    });
+};
+
+export {
+  search
+};
