@@ -931,18 +931,18 @@ public class DefaultStoreTest {
     Map<String, ScheduleSpecification> schedules = getSchedules(appId);
     Assert.assertEquals(0, schedules.size());
 
-    store.addSchedule(program.toEntityId(), scheduleSpec1);
+    store.addSchedule(program.toEntityId(), scheduleSpec1, false);
     schedules = getSchedules(appId);
     Assert.assertEquals(1, schedules.size());
     Assert.assertEquals(scheduleSpec1, schedules.get("Schedule1"));
 
-    store.addSchedule(program.toEntityId(), scheduleSpec2);
+    store.addSchedule(program.toEntityId(), scheduleSpec2, false);
     schedules = getSchedules(appId);
     Assert.assertEquals(2, schedules.size());
     Assert.assertEquals(scheduleSpec2, schedules.get("Schedule2"));
 
     try {
-      store.addSchedule(program.toEntityId(), scheduleWithSameNameSpec);
+      store.addSchedule(program.toEntityId(), scheduleWithSameNameSpec, false);
       Assert.fail("Should have thrown Exception because multiple schedules with the same name are being added.");
     } catch (IllegalArgumentException ex) {
       Assert.assertEquals("Schedule with the name 'Schedule2' already exists.", ex.getMessage());

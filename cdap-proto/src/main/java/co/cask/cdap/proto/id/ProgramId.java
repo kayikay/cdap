@@ -39,7 +39,7 @@ public class ProgramId extends NamespacedEntityId implements ParentedId<Applicat
     this(new ApplicationId(namespace, application), type, program);
   }
 
-  ProgramId(ApplicationId appId, ProgramType type, String program) {
+  public ProgramId(ApplicationId appId, ProgramType type, String program) {
     super(appId.getNamespace(), EntityType.PROGRAM);
     if (type == null) {
       throw new NullPointerException("Program type cannot be null.");

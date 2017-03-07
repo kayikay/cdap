@@ -28,6 +28,7 @@ import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.app.runtime.ProgramRuntimeService;
 import co.cask.cdap.app.runtime.ProgramRuntimeService.RuntimeInfo;
 import co.cask.cdap.app.store.Store;
+import co.cask.cdap.common.AlreadyExistsException;
 import co.cask.cdap.common.ApplicationNotFoundException;
 import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.ConflictException;
@@ -47,6 +48,7 @@ import co.cask.cdap.internal.app.runtime.BasicArguments;
 import co.cask.cdap.internal.app.runtime.ProgramOptionConstants;
 import co.cask.cdap.internal.app.runtime.SimpleProgramOptions;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
+import co.cask.cdap.internal.app.runtime.schedule.SchedulerException;
 import co.cask.cdap.internal.app.store.RunRecordMeta;
 import co.cask.cdap.proto.BasicThrowable;
 import co.cask.cdap.proto.Id;
@@ -800,6 +802,88 @@ public class ProgramLifecycleService extends AbstractIdleService {
         }
         break;
     }
+  }
+
+  /**
+   * Add a schedule for a program.
+   *
+   * @param programId the program id for which the schedule needs to be added
+   * @param scheduleSpec the schedule specification
+   * @throws NotFoundException when application is not found
+   * @throws SchedulerException on an exception when updating the schedule
+   */
+  public void addSchedule(ProgramId programId, ScheduleSpecification scheduleSpec)
+    throws NotFoundException, SchedulerException, AlreadyExistsException {
+    ApplicationSpecification appSpec = store.getApplication(programId.getParent());
+    if (appSpec == null) {
+      throw new ApplicationNotFoundException(programId.getParent());
+    }
+
+    String scheduleName = scheduleSpec.getSchedule().getName();
+    ScheduleSpecification existingScheduleSpec = appSpec.getSchedules().get(scheduleName);
+    if (existingScheduleSpec != null) {
+      throw new AlreadyExistsException(
+        new ScheduleId(programId.getNamespace(), programId.getApplication(), scheduleName));
+    }
+
+    // TODO: Figure out if there a way to make the scheduler update and store update transactional
+    scheduler.schedule(programId, scheduleSpec.getProgram().getProgramType(), scheduleSpec.getSchedule(),
+                       scheduleSpec.getProperties());
+    store.addSchedule(programId, scheduleSpec, false);
+  }
+
+  /**
+   * Update the schedule for a program.
+   *
+   * @param programId the program id for which the schedule needs to be updated
+   * @param scheduleSpecUpdate update to the schedule specification
+   * @throws NotFoundException when application is not found
+   * @throws SchedulerException on an exception when updating the schedule
+   */
+  public void updateSchedule(ProgramId programId, ScheduleSpecification scheduleSpecUpdate)
+    throws NotFoundException, SchedulerException {
+    ApplicationSpecification appSpec = store.getApplication(programId.getParent());
+    if (appSpec == null) {
+      throw new ApplicationNotFoundException(programId.getParent());
+    }
+
+    String scheduleName = scheduleSpecUpdate.getSchedule().getName();
+    ScheduleSpecification existingScheduleSpec = appSpec.getSchedules().get(scheduleName);
+    if (existingScheduleSpec == null) {
+      throw new NotFoundException(new ScheduleId(programId.getNamespace(), programId.getApplication(), scheduleName));
+    }
+
+    // TODO: Overlay the schedule spec update on to the existing spec
+    // TODO: Also handle schedule type change
+    ScheduleSpecification finalScheduleSpec = scheduleSpecUpdate;
+    // TODO: Figure out if there a way to make the scheduler update and store update transactional
+    scheduler.updateSchedule(programId, finalScheduleSpec.getProgram().getProgramType(),
+                             finalScheduleSpec.getSchedule(), finalScheduleSpec.getProperties());
+    store.addSchedule(programId, finalScheduleSpec, true);
+  }
+
+  /**
+   * Delete a given schedule for a program.
+   *
+   * @param programId the program id for which the schedule needs to be changed
+   * @param scheduleName the schedule name to be deleted
+   * @throws NotFoundException when application is not found, or when the schdule is not found
+   * @throws SchedulerException on an exception when updating the schedule
+   */
+  public void deleteSchedule(ProgramId programId, String scheduleName) throws NotFoundException, SchedulerException {
+    ApplicationSpecification appSpec = store.getApplication(programId.getParent());
+    if (appSpec == null) {
+      throw new ApplicationNotFoundException(programId.getParent());
+    }
+
+    ScheduleSpecification scheduleSpec = appSpec.getSchedules().get(scheduleName);
+    if (scheduleSpec == null) {
+      throw new NotFoundException(new ScheduleId(programId.getNamespace(), programId.getApplication(), scheduleName));
+    }
+
+    // TODO: Figure out if there a way to make the scheduler update and store update transactional
+    scheduler.deleteSchedule(programId, scheduleSpec.getProgram().getProgramType(), scheduleName);
+    store.deleteSchedule(programId, scheduleName);
   }
 
   /**

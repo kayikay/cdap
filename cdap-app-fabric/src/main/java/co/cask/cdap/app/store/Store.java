@@ -298,11 +298,13 @@ public interface Store extends RuntimeStore {
 
   /**
    * Adds a schedule for a particular program. If the schedule with the name already exists, the method will
-   * throw RuntimeException.
+   * throw RuntimeException unless overwrite is true. If overwrite is true then the existing schedule is updated.
+   *
    * @param program defines program to which a schedule is being added
    * @param scheduleSpecification defines the schedule to be added for the program
+   * @param overwrite whether to overwrite an existing schedule
    */
-  void addSchedule(ProgramId program, ScheduleSpecification scheduleSpecification);
+  void addSchedule(ProgramId program, ScheduleSpecification scheduleSpecification, boolean overwrite);
 
   /**
    * Deletes data for an application from the WorkflowDataset table
