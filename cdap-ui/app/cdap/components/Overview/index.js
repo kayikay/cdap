@@ -21,15 +21,18 @@ import StreamOverview from 'components/Overview/StreamOverview';
 import {objectQuery} from 'services/helpers';
 import isNil from 'lodash/isNil';
 import classnames from 'classnames';
+import SearchStore from 'components/EntityListView/SearchStore';
+import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
 require('./Overview.scss');
 
 export default class Overview extends Component {
   constructor(props) {
     super(props);
+    let {overviewEntity} = SearchStore.getState().search;
     this.state = {
-      toggleOverview: this.props.toggleOverview,
-      entity: this.props.entity,
-      tag: null
+      tag: null,
+      entity: overviewEntity,
+      showOverview: false
     };
     this.typeToComponentMap = {
       'application': AppOverview,
@@ -37,35 +40,37 @@ export default class Overview extends Component {
       'stream': StreamOverview
     };
   }
-  componentWillReceiveProps(nextProps) {
-    let {toggleOverview, entity } = nextProps;
-    let hasEntityChanged = !isNil(entity) && objectQuery(this.props.entity, 'id') !== objectQuery(entity, 'id');
-    if (
-      this.props.toggleOverview !== toggleOverview ||
-      hasEntityChanged
-    ) {
-      let tag = this.typeToComponentMap[objectQuery(entity, 'type')];
-      this.setState({
-        toggleOverview,
-        entity,
-        tag
-      });
-    }
+  componentWillMount() {
+    SearchStore.subscribe(() => {
+      let searchState = SearchStore.getState().search;
+      let overviewEntity = searchState.overviewEntity;
+      if (!isNil(overviewEntity) && overviewEntity.id !== objectQuery(this.state, 'entity', 'id')) {
+        this.setState({
+          entity: overviewEntity,
+          showOverview: true,
+          tag: this.typeToComponentMap[objectQuery(overviewEntity, 'type')]
+        });
+      }
+    });
   }
   componentDidUpdate() {
-    if (this.props.entity) {
-      let el = document.getElementById(this.props.entity.uniqueId);
-      let paginationContainer = document.querySelector('.pagination-container');
+    if (this.state.entity) {
+      let el = document.getElementById(this.state.entity.uniqueId);
+      let paginationContainer = document.querySelector('.entity-list-view');
       el.scrollIntoView();
       paginationContainer.scrollTop -= 63;
     }
   }
   hideOverview() {
-    if (this.props.onClose) {
-      this.props.onClose();
-    }
+    this.setState({
+      showOverview: false
+    });
+    SearchStore.dispatch({
+      type: SearchStoreActions.RESETOVERVIEWENTITY
+    });
   }
   closeAndRefresh(action) {
+    this.hideOverview();
     if (action === 'delete') {
       if (this.props.onCloseAndRefresh) {
         this.props.onCloseAndRefresh();
@@ -75,7 +80,7 @@ export default class Overview extends Component {
   render() {
     let Tag = this.state.tag || 'div';
     return (
-      <div className={classnames("overview-container", {"show-overview": this.state.toggleOverview })}>
+      <div className={classnames("overview-container", {"show-overview": this.state.showOverview })}>
         <div className="overview-wrapper" >
           {
             React.createElement(
@@ -94,8 +99,5 @@ export default class Overview extends Component {
 }
 
 Overview.propTypes = {
-  toggleOverview: PropTypes.bool,
-  entity: PropTypes.object,
-  onClose: PropTypes.func,
   onCloseAndRefresh: PropTypes.func
 };

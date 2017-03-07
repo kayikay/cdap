@@ -21,6 +21,7 @@ import {objectQuery} from 'services/helpers';
 import JustAddedSection from 'components/EntityListView/JustAddedSection';
 import NoEntitiesMessage from 'components/EntityListView/NoEntitiesMessage';
 import SearchStore from 'components/EntityListView/SearchStore';
+import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
 import ListViewHeader from 'components/EntityListView/ListViewHeader';
 
 export default class HomeListView extends Component {
@@ -36,28 +37,21 @@ export default class HomeListView extends Component {
   componentWillReceiveProps(nextProps) {
     this.setState({
       list: nextProps.list,
-      loading: nextProps.loading,
-      animationDirection: nextProps.animationDirection,
-      activeEntity: nextProps.activeEntity,
-      errorMessage: nextProps.errorMessage,
-      errorStatusCode: nextProps.errorStatusCode,
-      retryCounter: nextProps.retryCounter
+      loading: nextProps.loading
     });
   }
 
   onClick(entity) {
-    let activeEntity = this.state.list.filter(e => e.id === entity.id);
-    if (activeEntity.length) {
-      this.setState({
-        activeEntity: activeEntity[0]
-      });
-    }
-    if (this.props.onEntityClick) {
-      this.props.onEntityClick(entity);
-    }
+    SearchStore.dispatch({
+      type: SearchStoreActions.SETOVERVIEWENTITY,
+      payload: {
+        overviewEntity: entity
+      }
+    });
   }
   render() {
     let content;
+    let overviewEntity = SearchStore.getState().search.overviewEntity;
     if (this.state.loading) {
       content = (
         <h3 className="text-xs-center">
@@ -80,7 +74,7 @@ export default class HomeListView extends Component {
           <EntityCard
             className={
               classnames('entity-card-container',
-                { active: entity.uniqueId === objectQuery(this.state, 'activeEntity', 'uniqueId') }
+                { active: entity.uniqueId === objectQuery(overviewEntity, 'uniqueId') }
               )
             }
             id={entity.uniqueId}
@@ -105,7 +99,6 @@ export default class HomeListView extends Component {
               clickHandler={this.onClick.bind(this)}
               onFastActionSuccess={this.props.onFastActionSuccess}
               onUpdate={this.props.onUpdate}
-              activeEntity={this.props.activeEntity}
               currentPage={currentPage}
               limit={this.props.pageSize}
             />)
@@ -122,11 +115,9 @@ export default class HomeListView extends Component {
 HomeListView.propTypes = {
   list: PropTypes.array,
   loading: PropTypes.bool,
-  onEntityClick: PropTypes.func,
   onUpdate: PropTypes.func,
   onFastActionSuccess: PropTypes.func, // FIXME: This is not right. I don't think onFastActionSuccess is being used correct here. Not able to reason.
   className: PropTypes.string,
-  activeEntity: PropTypes.object,
   pageSize: PropTypes.number,
   showJustAddedSection: PropTypes.bool
 };

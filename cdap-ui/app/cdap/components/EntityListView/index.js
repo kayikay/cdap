@@ -32,7 +32,7 @@ import ExploreTablesStore from 'services/ExploreTables/ExploreTablesStore';
 import {fetchTables} from 'services/ExploreTables/ActionCreator';
 import PageErrorMessage from 'components/EntityListView/ErrorMessage/PageErrorMessage';
 import HomeErrorMessage from 'components/EntityListView/ErrorMessage';
-
+import Overview from 'components/Overview';
 export default class EntityListView extends Component {
   constructor(props) {
     super(props);
@@ -40,7 +40,8 @@ export default class EntityListView extends Component {
       entities: [],
       loading: false,
       limit: DEFAULT_SEARCH_PAGE_SIZE,
-      total: 0
+      total: 0,
+      overview: false
     };
     this.eventEmitter = ee(ee);
     // Maintaining a retryCounter outside the state as it doesn't affect the state/view directly.
@@ -54,12 +55,13 @@ export default class EntityListView extends Component {
   }
   componentDidMount() {
     this.searchStoreSubscription = SearchStore.subscribe(() => {
-      let {results:entities, loading, limit, total} = SearchStore.getState().search;
+      let {results:entities, loading, limit, total, overviewEntity} = SearchStore.getState().search;
       this.setState({
         entities,
         loading,
         limit,
-        total
+        total,
+        overview: !isNil(overviewEntity)
       });
     });
     SearchStore.dispatch({
@@ -94,6 +96,15 @@ export default class EntityListView extends Component {
   }
   retrySearch() {
     this.retryCounter += 1;
+    search();
+  }
+  onOverviewCloseAndRefresh() {
+    this.setState({
+      overview: false
+    });
+    SearchStore.dispatch({
+      type: SearchStoreActions.RESETOVERVIEWENTITY
+    });
     search();
   }
   render() {
@@ -142,12 +153,15 @@ export default class EntityListView extends Component {
               :
                 <HomeListView
                   loading={this.state.loading}
-                  className={classNames("home-list-view-container", {"show-overview-main-container": !isNil(this.state.selectedEntity)})}
+                  className={classNames("home-list-view-container", {"show-overview-main-container": this.state.overview})}
                   list={this.state.entities}
                   pageSize={this.state.limit}
                   showJustAddedSection={searchText.length}
                 />
             }
+            <Overview
+              onCloseAndRefresh={this.onOverviewCloseAndRefresh.bind(this)}
+            />
           </div>
         </div>
       </div>

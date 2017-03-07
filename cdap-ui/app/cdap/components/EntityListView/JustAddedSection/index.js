@@ -25,6 +25,7 @@ import EntityCard from 'components/EntityCard';
 import T from 'i18n-react';
 import ee from 'event-emitter';
 import globalEvents from 'services/global-events';
+import SearchStore from 'components/EntityListView/SearchStore';
 
 require('./JustAddedSection.scss');
 
@@ -104,12 +105,13 @@ export default class JustAddedSection extends Component {
       return null;
     }
 
+    let overviewEntity = SearchStore.getState().search.overviewEntity;
     let content = this.state.entities.map(entity => {
       return (
         <EntityCard
           className={
             classnames('entity-card-container',
-              { active: entity.uniqueId === objectQuery(this.props, 'activeEntity', 'uniqueId') }
+              { active: entity.uniqueId === objectQuery(overviewEntity, 'uniqueId') }
             )
           }
           key={entity.uniqueId}

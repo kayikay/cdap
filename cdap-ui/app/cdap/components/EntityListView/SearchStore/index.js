@@ -53,7 +53,9 @@ const defaultSearchState = {
   loading: false,
   results: [],
 
-  error: defaultErrorState
+  error: defaultErrorState,
+
+  overviewEntity: null
 };
 
 const defaultInitialState = {
@@ -161,6 +163,14 @@ const search = (state = defaultSearchState, action = defaultAction) => {
           statusCode: action.payload.errorStatusCode,
           message: action.payload.errorMessage
         }
+      });
+    case SearchStoreActions.RESETOVERVIEWENTITY:
+      return Object.assign({}, state, {
+        overviewEntity: null
+      });
+    case SearchStoreActions.SETOVERVIEWENTITY:
+      return Object.assign({}, state, {
+        overviewEntity: action.payload.overviewEntity
       });
     default:
       return state;
