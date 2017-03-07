@@ -30,6 +30,8 @@ import globalEvents from 'services/global-events';
 import ee from 'event-emitter';
 import ExploreTablesStore from 'services/ExploreTables/ExploreTablesStore';
 import {fetchTables} from 'services/ExploreTables/ActionCreator';
+import PageErrorMessage from 'components/EntityListView/ErrorMessage/PageErrorMessage';
+import HomeErrorMessage from 'components/EntityListView/ErrorMessage';
 
 export default class EntityListView extends Component {
   constructor(props) {
@@ -41,6 +43,9 @@ export default class EntityListView extends Component {
       total: 0
     };
     this.eventEmitter = ee(ee);
+    // Maintaining a retryCounter outside the state as it doesn't affect the state/view directly.
+    // We just need to retry for 5 times exponentially and then stop with a message.
+    this.retryCounter = 0;
     this.refreshSearchByCreationTime = this.refreshSearchByCreationTime.bind(this);
     this.eventEmitter.on(globalEvents.APPUPLOAD, this.refreshSearchByCreationTime);
     this.eventEmitter.on(globalEvents.STREAMCREATE, this.refreshSearchByCreationTime);
@@ -87,9 +92,37 @@ export default class EntityListView extends Component {
    });
    search();
   }
+  retrySearch() {
+    this.retryCounter += 1;
+    search();
+  }
   render() {
     let namespace = NamespaceStore.getState().selectedNamespace;
-    let searchText = SearchStore.getState().search.query;
+    let searchState = SearchStore.getState();
+    let currentPage = searchState.search.currentPage;
+    let query = searchState.search.query;
+    let searchText = searchState.search.query;
+    let {statusCode:errorStatusCode, message:errorMessage } = searchState.search.error;
+    let errorContent;
+    if (!isNil(errorStatusCode)) {
+      if (errorStatusCode === 'PAGE_NOT_FOUND') {
+        errorContent = (
+          <PageErrorMessage
+            pageNum={currentPage}
+            query={query}
+          />
+        );
+      } else {
+        errorContent = (
+          <HomeErrorMessage
+            errorMessage={errorMessage}
+            errorStatusCode={errorStatusCode}
+            onRetry={this.retrySearch.bind(this)}
+            retryCounter={this.retryCounter}
+          />
+        );
+      }
+    }
 
     return (
       <div>
@@ -103,13 +136,18 @@ export default class EntityListView extends Component {
             currentPage={1}
           />
           <div className="entities-container">
-            <HomeListView
-              loading={this.state.loading}
-              className={classNames("home-list-view-container", {"show-overview-main-container": !isNil(this.state.selectedEntity)})}
-              list={this.state.entities}
-              pageSize={this.state.limit}
-              showJustAddedSection={searchText.length}
-            />
+            {
+              !isNil(errorContent) ?
+                errorContent
+              :
+                <HomeListView
+                  loading={this.state.loading}
+                  className={classNames("home-list-view-container", {"show-overview-main-container": !isNil(this.state.selectedEntity)})}
+                  list={this.state.entities}
+                  pageSize={this.state.limit}
+                  showJustAddedSection={searchText.length}
+                />
+            }
           </div>
         </div>
       </div>

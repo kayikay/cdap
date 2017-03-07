@@ -32,6 +32,11 @@ const defaultAction = {
   payload: {}
 };
 
+const defaultErrorState = {
+  statusCode: null,
+  message: ''
+};
+
 const defaultSearchState = {
   filters: DEFAULT_SEARCH_FILTER_OPTIONS,
   activeFilters: DEFAULT_SEARCH_FILTERS,
@@ -46,7 +51,9 @@ const defaultSearchState = {
   currentPage: 1,
 
   loading: false,
-  results: []
+  results: [],
+
+  error: defaultErrorState
 };
 
 const defaultInitialState = {
@@ -143,6 +150,17 @@ const search = (state = defaultSearchState, action = defaultAction) => {
       return Object.assign({}, state, {
         currentPage: action.payload.currentPage,
         offset: action.payload.offset
+      });
+    case SearchStoreActions.RESETERROR:
+      return Object.assign({}, state, {
+        error: defaultErrorState
+      });
+    case SearchStoreActions.SETERROR:
+      return Object.assign({}, state, {
+        error: {
+          statusCode: action.payload.errorStatusCode,
+          message: action.payload.errorMessage
+        }
       });
     default:
       return state;

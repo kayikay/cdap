@@ -23,6 +23,7 @@ import SearchStoreAction from 'components/EntityListView/SearchStore/SearchStore
 import ExploreTablesStore from 'services/ExploreTables/ExploreTablesStore';
 import {fetchTables} from 'services/ExploreTables/ActionCreator';
 import {DEFAULT_SEARCH_QUERY} from 'components/EntityListView/SearchStore/SearchConstants';
+import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
 
 const search = () => {
   let namespace = NamespaceStore.getState().selectedNamespace;
@@ -71,12 +72,37 @@ const search = () => {
           })
       });
     })
-    .subscribe((response) => {
-      SearchStore.dispatch({
-        type: SearchStoreAction.SETRESULTS,
-        payload: {response}
-      });
-    });
+    .subscribe(
+      (response) => {
+        let currentPage = SearchStore.getState().search.currentPage;
+        if (response.total > 0 && Math.ceil(response.total/limit) < currentPage) {
+          SearchStore.dispatch({
+            type: SearchStoreActions.SETERROR,
+            payload: {
+              errorStatusCode: 'PAGE_NOT_FOUND',
+              errorMessage: null
+            }
+          });
+          return;
+        }
+        SearchStore.dispatch({
+          type: SearchStoreAction.SETRESULTS,
+          payload: {response}
+        });
+        SearchStore.dispatch({
+          type: SearchStoreActions.RESETERROR
+        });
+      },
+      (error) => {
+        SearchStore.dispatch({
+          type: SearchStoreActions.SETERROR,
+          payload: {
+            errorStatusCode: error.statusCode,
+            errorMessage: typeof err === 'object' ? error.response : error,
+          }
+        });
+      }
+    );
 };
 
 export {
