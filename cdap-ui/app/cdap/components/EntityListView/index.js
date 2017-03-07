@@ -157,6 +157,7 @@ export default class EntityListView extends Component {
                   list={this.state.entities}
                   pageSize={this.state.limit}
                   showJustAddedSection={searchText.length}
+                  onFastActionSuccess={search}
                 />
             }
             <Overview

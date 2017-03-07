@@ -82,7 +82,6 @@ export default class HomeListView extends Component {
             onClick={this.onClick.bind(this, entity)}
             entity={entity}
             onFastActionSuccess={this.props.onFastActionSuccess}
-            onUpdate={this.props.onUpdate}
           />
         );
       });
@@ -98,7 +97,6 @@ export default class HomeListView extends Component {
             (<JustAddedSection
               clickHandler={this.onClick.bind(this)}
               onFastActionSuccess={this.props.onFastActionSuccess}
-              onUpdate={this.props.onUpdate}
               currentPage={currentPage}
               limit={this.props.pageSize}
             />)
@@ -115,7 +113,6 @@ export default class HomeListView extends Component {
 HomeListView.propTypes = {
   list: PropTypes.array,
   loading: PropTypes.bool,
-  onUpdate: PropTypes.func,
   onFastActionSuccess: PropTypes.func, // FIXME: This is not right. I don't think onFastActionSuccess is being used correct here. Not able to reason.
   className: PropTypes.string,
   pageSize: PropTypes.number,
