@@ -573,7 +573,7 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                              String appVersion, String programType, String program, String scheduleName)
     throws IOException, BadRequestException, NotFoundException, SchedulerException, AlreadyExistsException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appId, appVersion);
-    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOf(programType), program);
+    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOfCategoryName(programType), program);
     ScheduleSpecification scheduleSpecFromRequest;
     try (Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()), Charsets.UTF_8)) {
       // The schedule spec in the request body does not contain the program information
@@ -636,7 +636,7 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                                 String appVersion, String programType, String program, String scheduleName)
     throws IOException, BadRequestException, NotFoundException, SchedulerException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appId, appVersion);
-    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOf(programType), program);
+    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOfCategoryName(programType), program);
     ScheduleSpecification scheduleSpecFromRequest;
     try (Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()), Charsets.UTF_8)) {
       // The schedule spec in the request body can contain only the changed information or more, but should always
@@ -696,7 +696,7 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                                 String appVersion, String programType, String program, String scheduleName)
     throws NotFoundException, SchedulerException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appName, appVersion);
-    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOf(programType), program);
+    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOfCategoryName(programType), program);
     lifecycleService.deleteSchedule(programId, scheduleName);
     responder.sendStatus(HttpResponseStatus.OK);
   }
