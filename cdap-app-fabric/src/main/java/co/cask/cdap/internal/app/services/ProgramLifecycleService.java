@@ -812,9 +812,10 @@ public class ProgramLifecycleService extends AbstractIdleService {
    * @param scheduleSpec the schedule specification
    * @throws NotFoundException when application is not found
    * @throws SchedulerException on an exception when updating the schedule
+   * @throws BadRequestException if the program type is not workflow
    */
   public void addSchedule(ApplicationId applicationId, ScheduleSpecification scheduleSpec)
-    throws NotFoundException, SchedulerException, AlreadyExistsException {
+    throws NotFoundException, SchedulerException, AlreadyExistsException, BadRequestException {
     ApplicationSpecification appSpec = store.getApplication(applicationId);
     if (appSpec == null) {
       throw new ApplicationNotFoundException(applicationId);
@@ -827,10 +828,16 @@ public class ProgramLifecycleService extends AbstractIdleService {
         new ScheduleId(applicationId.getNamespace(), applicationId.getApplication(), scheduleName));
     }
 
-    // TODO: Figure out if there a way to make the scheduler update and store update transactional
     ProgramType programType = ProgramType.valueOfSchedulableType(scheduleSpec.getProgram().getProgramType());
     String programName = scheduleSpec.getProgram().getProgramName();
-    ProgramId programId = new ProgramId(applicationId, programType, programName);
+    ProgramId programId = applicationId.program(programType, programName);
+
+    if (!programType.equals(ProgramType.WORKFLOW)) {
+      throw new BadRequestException("Only workflows can be scheduled");
+    }
+
+    // TODO: CDAP-8907 Make the scheduler update and store update transactional
+    // TODO: CDAP-8908 reduce redundant parameters in the scheduler call
     scheduler.schedule(programId, scheduleSpec.getProgram().getProgramType(), scheduleSpec.getSchedule(),
                        scheduleSpec.getProperties());
     store.addSchedule(programId, scheduleSpec, false);
@@ -867,10 +874,22 @@ public class ProgramLifecycleService extends AbstractIdleService {
                       newType, existingType));
     }
 
-    // TODO: Figure out if there a way to make the scheduler update and store update transactional
+    ProgramType existingProgramType =
+      ProgramType.valueOfSchedulableType(existingScheduleSpec.getProgram().getProgramType());
+
     ProgramType programType = ProgramType.valueOfSchedulableType(scheduleSpecUpdate.getProgram().getProgramType());
     String programName = scheduleSpecUpdate.getProgram().getProgramName();
-    ProgramId programId = new ProgramId(applicationId, programType, programName);
+    ProgramId programId = applicationId.program(programType, programName);
+
+    // The below check also makes sure that only workflows can be scheduled
+    if (!existingProgramType.equals(programType)) {
+      throw new BadRequestException(
+        String.format("The updated schedule has a different program type (%s) than the existing program type (%s)",
+                      programType, existingProgramType));
+    }
+
+    // TODO: CDAP-8907 Make the scheduler update and store update transactional
+    // TODO: CDAP-8908 reduce redundant parameters in the scheduler call
     scheduler.updateSchedule(programId, scheduleSpecUpdate.getProgram().getProgramType(),
                              scheduleSpecUpdate.getSchedule(), scheduleSpecUpdate.getProperties());
     store.addSchedule(programId, scheduleSpecUpdate, true);
@@ -897,10 +916,12 @@ public class ProgramLifecycleService extends AbstractIdleService {
                                                  scheduleName));
     }
 
-    // TODO: Figure out if there a way to make the scheduler update and store update transactional
     ProgramType programType = ProgramType.valueOfSchedulableType(scheduleSpec.getProgram().getProgramType());
     String programName = scheduleSpec.getProgram().getProgramName();
-    ProgramId programId = new ProgramId(applicationId, programType, programName);
+    ProgramId programId = applicationId.program(programType, programName);
+
+    // TODO: CDAP-8907 Make the scheduler update and store update transactional
+    // TODO: CDAP-8908 reduce redundant parameters in the scheduler call
     scheduler.deleteSchedule(programId, scheduleSpec.getProgram().getProgramType(), scheduleName);
     store.deleteSchedule(programId, scheduleName);
   }
