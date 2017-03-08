@@ -23,7 +23,6 @@ import co.cask.cdap.api.flow.FlowletDefinition;
 import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.api.service.ServiceSpecification;
-import co.cask.cdap.api.workflow.ScheduleProgramInfo;
 import co.cask.cdap.app.mapreduce.MRJobInfoFetcher;
 import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.app.runtime.ProgramRuntimeService;
@@ -542,38 +541,32 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
   }
 
   @PUT
-  @Path("apps/{app-name}/{program-type}/{program-name}/schedules/{schedule-name}")
+  @Path("apps/{app-name}/schedules/{schedule-name}")
   @AuditPolicy(AuditDetail.REQUEST_BODY)
   public void addSchedule(HttpRequest request, HttpResponder responder,
                           @PathParam("namespace-id") String namespaceId,
                           @PathParam("app-name") String appName,
-                          @PathParam("program-type") String programType,
-                          @PathParam("program-name") String programName,
                           @PathParam("schedule-name") String scheduleName)
     throws SchedulerException, BadRequestException, NotFoundException, IOException, AlreadyExistsException {
-    doAddSchedule(request, responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION,
-                  programType, programName, scheduleName);
+    doAddSchedule(request, responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION, scheduleName);
   }
 
   @PUT
-  @Path("apps/{app-name}/versions/{app-version}/{program-type}/{program-name}/schedules/{schedule-name}")
+  @Path("apps/{app-name}/versions/{app-version}/schedules/{schedule-name}")
   @AuditPolicy(AuditDetail.REQUEST_BODY)
   public void addSchedule(HttpRequest request, HttpResponder responder,
                           @PathParam("namespace-id") String namespaceId,
                           @PathParam("app-name") String appName,
                           @PathParam("app-version") String appVersion,
-                          @PathParam("program-type") String programType,
-                          @PathParam("program-name") String programName,
                           @PathParam("schedule-name") String scheduleName)
     throws SchedulerException, BadRequestException, NotFoundException, IOException, AlreadyExistsException {
-    doAddSchedule(request, responder, namespaceId, appName, appVersion, programType, programName, scheduleName);
+    doAddSchedule(request, responder, namespaceId, appName, appVersion, scheduleName);
   }
 
   private void doAddSchedule(HttpRequest request, HttpResponder responder, String namespaceId, String appId,
-                             String appVersion, String programType, String program, String scheduleName)
+                             String appVersion, String scheduleName)
     throws IOException, BadRequestException, NotFoundException, SchedulerException, AlreadyExistsException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appId, appVersion);
-    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOfCategoryName(programType), program);
     ScheduleSpecification scheduleSpecFromRequest;
     try (Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()), Charsets.UTF_8)) {
       // The schedule spec in the request body does not contain the program information
@@ -594,49 +587,38 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
           scheduleSpecFromRequest.getSchedule().getName(), scheduleName));
     }
 
-    // Add program information to the schedule spec from the request
-    ScheduleSpecification scheduleSpec =
-      new ScheduleSpecification(scheduleSpecFromRequest.getSchedule(),
-                                new ScheduleProgramInfo(programId.getType().getSchedulableType(), program),
-                                scheduleSpecFromRequest.getProperties());
-    lifecycleService.addSchedule(programId, scheduleSpec);
+    lifecycleService.addSchedule(applicationId, scheduleSpecFromRequest);
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
   @POST
-  @Path("apps/{app-name}/{program-type}/{program-name}/schedules/{schedule-name}/update")
+  @Path("apps/{app-name}/schedules/{schedule-name}/update")
   @AuditPolicy(AuditDetail.REQUEST_BODY)
   public void updateSchedule(HttpRequest request, HttpResponder responder,
                              @PathParam("namespace-id") String namespaceId,
                              @PathParam("app-name") String appName,
-                             @PathParam("program-type") String programType,
-                             @PathParam("program-name") String programName,
                              @PathParam("schedule-name") String scheduleName)
     throws SchedulerException, BadRequestException, NotFoundException, IOException {
-    doUpdateSchedule(request, responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION,
-                  programType, programName, scheduleName);
+    doUpdateSchedule(request, responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION, scheduleName);
   }
 
   @POST
-  @Path("apps/{app-name}/versions/{app-version}/{program-type}/{program-name}/schedules/{schedule-name}/update")
+  @Path("apps/{app-name}/versions/{app-version}/schedules/{schedule-name}/update")
   @AuditPolicy(AuditDetail.REQUEST_BODY)
   public void updateSchedule(HttpRequest request, HttpResponder responder,
                              @PathParam("namespace-id") String namespaceId,
                              @PathParam("app-name") String appName,
                              @PathParam("app-version") String appVersion,
-                             @PathParam("program-type") String programType,
-                             @PathParam("program-name") String programName,
                              @PathParam("schedule-name") String scheduleName)
     throws SchedulerException, BadRequestException, NotFoundException, IOException {
-    doUpdateSchedule(request, responder, namespaceId, appName, appVersion, programType, programName, scheduleName);
+    doUpdateSchedule(request, responder, namespaceId, appName, appVersion, scheduleName);
   }
 
   // TODO: refactor doAddSchedule and doUpdateSchedule to reduce code duplication
   private void doUpdateSchedule(HttpRequest request, HttpResponder responder, String namespaceId, String appId,
-                                String appVersion, String programType, String program, String scheduleName)
+                                String appVersion, String scheduleName)
     throws IOException, BadRequestException, NotFoundException, SchedulerException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appId, appVersion);
-    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOfCategoryName(programType), program);
     ScheduleSpecification scheduleSpecFromRequest;
     try (Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()), Charsets.UTF_8)) {
       // The schedule spec in the request body can contain only the changed information or more, but should always
@@ -657,47 +639,36 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
           scheduleSpecFromRequest.getSchedule().getName(), scheduleName));
     }
 
-    // Add program information to the schedule spec from the request
-    ScheduleSpecification scheduleSpec =
-      new ScheduleSpecification(scheduleSpecFromRequest.getSchedule(),
-                                new ScheduleProgramInfo(programId.getType().getSchedulableType(), program),
-                                scheduleSpecFromRequest.getProperties());
-    lifecycleService.updateSchedule(programId, scheduleSpec);
+    lifecycleService.updateSchedule(applicationId, scheduleSpecFromRequest);
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
   @DELETE
-  @Path("apps/{app-name}/{program-type}/{program-name}/schedules/{schedule-name}")
+  @Path("apps/{app-name}/schedules/{schedule-name}")
   public void deleteSchedule(HttpRequest request, HttpResponder responder,
                              @PathParam("namespace-id") String namespaceId,
                              @PathParam("app-name") String appName,
-                             @PathParam("program-type") String programType,
-                             @PathParam("program-name") String programName,
                              @PathParam("schedule-name") String scheduleName)
     throws NotFoundException, SchedulerException {
-    doDeleteSchedule(responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION, programType, programName,
-                     scheduleName);
+    doDeleteSchedule(responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION, scheduleName);
   }
 
   @DELETE
-  @Path("apps/{app-name}/versions/{app-version}/{program-type}/{program-name}/schedules/{schedule-name}")
+  @Path("apps/{app-name}/versions/{app-version}/schedules/{schedule-name}")
   public void deleteSchedule(HttpRequest request, HttpResponder responder,
                              @PathParam("namespace-id") String namespaceId,
                              @PathParam("app-name") String appName,
                              @PathParam("app-version") String appVersion,
-                             @PathParam("program-type") String programType,
-                             @PathParam("program-name") String programName,
                              @PathParam("schedule-name") String scheduleName)
     throws NotFoundException, SchedulerException {
-    doDeleteSchedule(responder, namespaceId, appName, appVersion, programType, programName, scheduleName);
+    doDeleteSchedule(responder, namespaceId, appName, appVersion, scheduleName);
   }
 
   private void doDeleteSchedule(HttpResponder responder, String namespaceId, String appName,
-                                String appVersion, String programType, String program, String scheduleName)
+                                String appVersion, String scheduleName)
     throws NotFoundException, SchedulerException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appName, appVersion);
-    ProgramId programId = new ProgramId(applicationId, ProgramType.valueOfCategoryName(programType), program);
-    lifecycleService.deleteSchedule(programId, scheduleName);
+    lifecycleService.deleteSchedule(applicationId, scheduleName);
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
