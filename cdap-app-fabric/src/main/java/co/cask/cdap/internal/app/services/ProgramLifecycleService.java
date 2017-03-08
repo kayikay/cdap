@@ -58,6 +58,7 @@ import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramStatus;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.RunRecord;
+import co.cask.cdap.proto.ScheduleType;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.EntityId;
 import co.cask.cdap.proto.id.Ids;
@@ -839,12 +840,13 @@ public class ProgramLifecycleService extends AbstractIdleService {
    * Update the schedule in an application.
    *
    * @param applicationId the application containing the schedule
-   * @param scheduleSpecUpdate update to the schedule specification
+   * @param scheduleSpecUpdate updated schedule specification
    * @throws NotFoundException when application is not found
    * @throws SchedulerException on an exception when updating the schedule
+   * @throws BadRequestException when existing schedule type does not match the updated schedule type
    */
   public void updateSchedule(ApplicationId applicationId, ScheduleSpecification scheduleSpecUpdate)
-    throws NotFoundException, SchedulerException, AlreadyExistsException {
+    throws NotFoundException, SchedulerException, AlreadyExistsException, BadRequestException {
     ApplicationSpecification appSpec = store.getApplication(applicationId);
     if (appSpec == null) {
       throw new ApplicationNotFoundException(applicationId);
@@ -857,16 +859,21 @@ public class ProgramLifecycleService extends AbstractIdleService {
                                                  scheduleName));
     }
 
-    // TODO: Overlay the schedule spec update on to the existing spec
-    // TODO: Also handle schedule type change
-    ScheduleSpecification finalScheduleSpec = scheduleSpecUpdate;
+    ScheduleType existingType = ScheduleType.fromSchedule(existingScheduleSpec.getSchedule());
+    ScheduleType newType = ScheduleType.fromSchedule(scheduleSpecUpdate.getSchedule());
+    if (!existingType.equals(newType)) {
+      throw new BadRequestException(
+        String.format("The updated schedule has different type (%s) then the existing schedule type (%s)",
+                      newType, existingType));
+    }
+
     // TODO: Figure out if there a way to make the scheduler update and store update transactional
-    ProgramType programType = ProgramType.valueOfSchedulableType(finalScheduleSpec.getProgram().getProgramType());
-    String programName = finalScheduleSpec.getProgram().getProgramName();
+    ProgramType programType = ProgramType.valueOfSchedulableType(scheduleSpecUpdate.getProgram().getProgramType());
+    String programName = scheduleSpecUpdate.getProgram().getProgramName();
     ProgramId programId = new ProgramId(applicationId, programType, programName);
-    scheduler.updateSchedule(programId, finalScheduleSpec.getProgram().getProgramType(),
-                             finalScheduleSpec.getSchedule(), finalScheduleSpec.getProperties());
-    store.addSchedule(programId, finalScheduleSpec, true);
+    scheduler.updateSchedule(programId, scheduleSpecUpdate.getProgram().getProgramType(),
+                             scheduleSpecUpdate.getSchedule(), scheduleSpecUpdate.getProperties());
+    store.addSchedule(programId, scheduleSpecUpdate, true);
   }
 
   /**
