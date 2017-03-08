@@ -24,7 +24,8 @@ import {isDescendant} from 'services/helpers';
 import Rx from 'rx';
 import SearchStore from 'components/EntityListView/SearchStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
-import {search} from 'components/EntityListView/SearchStore/ActionCreator';
+import {DEFAULT_SEARCH_SORT_OPTIONS} from 'components/EntityListView/SearchStore/SearchConstants';
+import {search, updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
 
 require('./EntityListHeader.scss');
 
@@ -105,7 +106,16 @@ export default class EntityListHeader extends Component {
         query: this.state.searchText
       }
     });
+    if (!this.state.searchText.length) {
+      SearchStore.dispatch({
+        type: SearchStoreActions.SETACTIVESORT,
+        payload: {
+          activeSort: DEFAULT_SEARCH_SORT_OPTIONS[4]
+        }
+      });
+    }
     search();
+    updateQueryString();
   }
 
   onFilterClick(option, event) {
@@ -126,7 +136,10 @@ export default class EntityListHeader extends Component {
     });
     this.setState({
       activeFilters
-    }, search);
+    }, () => {
+      search();
+      updateQueryString();
+    });
   }
 
   onSortClick(option) {
@@ -138,7 +151,10 @@ export default class EntityListHeader extends Component {
     });
     this.setState({
       activeSort: option
-    }, search);
+    }, () => {
+      search();
+      updateQueryString();
+    });
   }
 
   render() {

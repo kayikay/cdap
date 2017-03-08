@@ -16,7 +16,7 @@
 
 import React, {Component, PropTypes} from 'react';
 import SearchStore from 'components/EntityListView/SearchStore';
-import {search} from 'components/EntityListView/SearchStore/ActionCreator';
+import {search, updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
 import HomeListView from 'components/EntityListView/ListView';
 require('./EntityListView.scss');
 import isNil from 'lodash/isNil';
@@ -25,7 +25,6 @@ import EntityListHeader from 'components/EntityListView/EntityListHeader';
 import EntityListInfo from 'components/EntityListView/EntityListInfo';
 import NamespaceStore from 'services/NamespaceStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
-import {DEFAULT_SEARCH_PAGE_SIZE} from 'components/EntityListView/SearchStore/SearchConstants';
 import globalEvents from 'services/global-events';
 import ee from 'event-emitter';
 import ExploreTablesStore from 'services/ExploreTables/ExploreTablesStore';
@@ -33,6 +32,11 @@ import {fetchTables} from 'services/ExploreTables/ActionCreator';
 import PageErrorMessage from 'components/EntityListView/ErrorMessage/PageErrorMessage';
 import HomeErrorMessage from 'components/EntityListView/ErrorMessage';
 import Overview from 'components/Overview';
+import isEqual from 'lodash/isEqual';
+import isEmpty from 'lodash/isEmpty';
+import intersection from 'lodash/intersection';
+import {DEFAULT_SEARCH_FILTERS, DEFAULT_SEARCH_SORT, DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_SORT_OPTIONS, DEFAULT_SEARCH_PAGE_SIZE} from 'components/EntityListView/SearchStore/SearchConstants';
+
 export default class EntityListView extends Component {
   constructor(props) {
     super(props);
@@ -41,7 +45,7 @@ export default class EntityListView extends Component {
       loading: false,
       limit: DEFAULT_SEARCH_PAGE_SIZE,
       total: 0,
-      overview: false
+      overview: true // Start showing spinner until we get a response from backend.
     };
     this.eventEmitter = ee(ee);
     // Maintaining a retryCounter outside the state as it doesn't affect the state/view directly.
@@ -70,7 +74,52 @@ export default class EntityListView extends Component {
         element: document.getElementsByClassName('entity-list-view')
       }
     });
+    let queryObject = this.getQueryObject(this.props.location.query);
+    let pageSize = SearchStore.getState().search.limit;
+    SearchStore.dispatch({
+      type: SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE,
+      payload: {
+        activeSort: queryObject.sort,
+        activeFilters: queryObject.filters,
+        query: queryObject.query,
+        currentPage: queryObject.page,
+        offset: (queryObject.page - 1) * pageSize
+      }
+    });
     search();
+  }
+  componentWillReceiveProps(nextProps) {
+    let searchState = SearchStore.getState().search;
+    if (nextProps.currentPage !== searchState.currentPage) {
+      // To enable explore fastaction on each card in entity list page.
+      ExploreTablesStore.dispatch(
+       fetchTables(nextProps.params.namespace)
+     );
+    }
+
+    let queryObject = this.getQueryObject(nextProps.location.query);
+    if (
+      (nextProps.params.namespace !== this.props.params.namespace) ||
+      (
+        !isEqual(queryObject.filters, searchState.activeFilters) ||
+        queryObject.sort.fullSort !== searchState.activeSort.fullSort ||
+        queryObject.query !== searchState.query ||
+        queryObject.page !== searchState.currentPage
+      )
+    ) {
+      let pageSize = SearchStore.getState().search.limit;
+      SearchStore.dispatch({
+        type: SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE,
+        payload: {
+          activeSort: queryObject.sort,
+          activeFilters: queryObject.filters,
+          query: queryObject.query,
+          currentPage: queryObject.page,
+          offset: (queryObject.page - 1) * pageSize
+        }
+      });
+      search();
+    }
   }
   componentWillUnmount() {
     if (this.searchStoreSubscription) {
@@ -93,6 +142,52 @@ export default class EntityListView extends Component {
      }
    });
    search();
+   updateQueryString();
+  }
+  getQueryObject(query) {
+    if (isNil(query)) {
+      query = {};
+    }
+    let {q = '*', sort=DEFAULT_SEARCH_SORT.sort, order=DEFAULT_SEARCH_SORT.order, filter=DEFAULT_SEARCH_FILTERS, page=1} = query;
+    const getSort = (sortOption, order, q) => {
+      let isValidSortOption = DEFAULT_SEARCH_SORT_OPTIONS.find(sortOpt => sortOpt.sort === sortOption && sortOpt.order === order);
+      if (!isValidSortOption) {
+        return DEFAULT_SEARCH_SORT;
+      }
+      if (q !== DEFAULT_SEARCH_QUERY) {
+        return DEFAULT_SEARCH_SORT_OPTIONS[0];
+      }
+      return isValidSortOption;
+    };
+    const getFilters = (filters) => {
+      if (!Array.isArray(filters)) {
+        filters = [filters];
+      }
+      let validFilters = intersection(filters, DEFAULT_SEARCH_FILTERS);
+      if (!validFilters.length) {
+        return DEFAULT_SEARCH_FILTERS;
+      }
+      return validFilters;
+    };
+    const getPageNum = (page) => {
+      if (isNaN(page)) {
+        return 1;
+      }
+      return parseInt(page, 10);
+    };
+    const getSearchQuery = (q) => {
+      if (isNil(q) || isEmpty(q)) {
+        return DEFAULT_SEARCH_QUERY;
+      }
+      return q;
+    };
+    let queryObject = {
+      sort: getSort(sort, order, q),
+      filters: getFilters(filter),
+      page: getPageNum(page),
+      query: getSearchQuery(q)
+    };
+    return queryObject;
   }
   retrySearch() {
     this.retryCounter += 1;
@@ -144,7 +239,7 @@ export default class EntityListView extends Component {
             namespace={namespace}
             numberOfEntities={this.state.total}
             numberOfPages={this.state.total / this.state.limit}
-            currentPage={1}
+            currentPage={currentPage}
           />
           <div className="entities-container">
             {

@@ -20,7 +20,7 @@ import ReactPaginate from 'react-paginate';
 import NamespaceStore from 'services/NamespaceStore';
 import SearchStore from 'components/EntityListView/SearchStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
-import {search} from 'components/EntityListView/SearchStore/ActionCreator';
+import {search, updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
 
 require('./EntityListInfo.scss');
 
@@ -40,6 +40,7 @@ export default class EntityListInfo extends Component {
       }
     });
     search();
+    updateQueryString();
   }
 
   showPagination() {

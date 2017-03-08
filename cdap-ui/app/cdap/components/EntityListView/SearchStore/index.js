@@ -24,7 +24,6 @@ import {
   DEFAULT_SEARCH_SORT_OPTIONS,
   DEFAULT_SEARCH_PAGE_SIZE
 } from 'components/EntityListView/SearchStore/SearchConstants';
-import isEmpty from 'lodash/isEmpty';
 import isNil from 'lodash/isNil';
 
 const defaultAction = {
@@ -113,11 +112,8 @@ const search = (state = defaultSearchState, action = defaultAction) => {
   switch (action.type) {
     case SearchStoreActions.SETRESULTS: {
       let {results, total, limit} = action.payload.response;
-      if (isEmpty(results)) {
-        return state;
-      }
       return Object.assign({}, state, {
-        results: action.payload.response.results,
+        results: results,
         total,
         limit,
         loading: false
@@ -132,8 +128,7 @@ const search = (state = defaultSearchState, action = defaultAction) => {
         return state;
       }
       return Object.assign({}, state, {
-        activeSort: action.payload.activeSort,
-        query: DEFAULT_SEARCH_QUERY
+        activeSort: action.payload.activeSort
       });
     case SearchStoreActions.SETQUERY:
       return Object.assign({}, state, {
@@ -171,6 +166,14 @@ const search = (state = defaultSearchState, action = defaultAction) => {
     case SearchStoreActions.SETOVERVIEWENTITY:
       return Object.assign({}, state, {
         overviewEntity: action.payload.overviewEntity
+      });
+    case SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE:
+      return Object.assign({}, state, {
+        query: action.payload.query === '' ? '*' : action.payload.query,
+        activeSort: action.payload.query !== '*' ? DEFAULT_SEARCH_SORT_OPTIONS[0] : action.payload.activeSort,
+        activeFilters: action.payload.activeFilters,
+        currentPage: action.payload.currentPage,
+        offset: action.payload.offset
       });
     default:
       return state;

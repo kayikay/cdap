@@ -105,6 +105,58 @@ const search = () => {
     );
 };
 
+const updateQueryString = () => {
+  let queryString = '';
+  let sort = '';
+  let filter = '';
+  let query = '';
+  let page = '';
+  let queryParams = [];
+
+  let searchState = SearchStore.getState().search;
+  let {activeSort, activeFilters, query:searchQuery, currentPage} = searchState;
+
+  // Generate sort params
+  if (activeSort.sort !== 'none') {
+    sort = 'sort=' + activeSort.sort + '&order=' + activeSort.order;
+  }
+
+  // Generate filter params
+  if (activeFilters.length === 1) {
+    filter = 'filter=' + activeFilters[0];
+  } else if (activeFilters.length > 1) {
+    filter = 'filter=' + activeFilters.join('&filter=');
+  }
+
+  // Generate search param
+  if (searchQuery.length > 0) {
+    query = 'q=' + searchQuery;
+  }
+
+  // Generate page param
+  page = 'page=' + currentPage;
+
+  // Combine query parameters into query string
+  queryParams = [query, sort, filter, page].filter((element) => {
+    return element.length > 0;
+  });
+  queryString = queryParams.join('&');
+
+  if (queryString.length > 0) {
+    queryString = '?' + queryString;
+  }
+
+  let obj = {
+    title: 'CDAP',
+    url: location.pathname + queryString
+  };
+
+  console.trace('Updating url');
+
+  // Modify URL to match application state
+  history.pushState(obj, obj.title, obj.url);
+};
 export {
-  search
+  search,
+  updateQueryString
 };
