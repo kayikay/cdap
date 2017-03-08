@@ -598,7 +598,7 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                              @PathParam("namespace-id") String namespaceId,
                              @PathParam("app-name") String appName,
                              @PathParam("schedule-name") String scheduleName)
-    throws SchedulerException, BadRequestException, NotFoundException, IOException {
+    throws SchedulerException, BadRequestException, NotFoundException, IOException, AlreadyExistsException {
     doUpdateSchedule(request, responder, namespaceId, appName, ApplicationId.DEFAULT_VERSION, scheduleName);
   }
 
@@ -610,14 +610,14 @@ public class ProgramLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                              @PathParam("app-name") String appName,
                              @PathParam("app-version") String appVersion,
                              @PathParam("schedule-name") String scheduleName)
-    throws SchedulerException, BadRequestException, NotFoundException, IOException {
+    throws SchedulerException, BadRequestException, NotFoundException, IOException, AlreadyExistsException {
     doUpdateSchedule(request, responder, namespaceId, appName, appVersion, scheduleName);
   }
 
   // TODO: refactor doAddSchedule and doUpdateSchedule to reduce code duplication
   private void doUpdateSchedule(HttpRequest request, HttpResponder responder, String namespaceId, String appId,
                                 String appVersion, String scheduleName)
-    throws IOException, BadRequestException, NotFoundException, SchedulerException {
+    throws IOException, BadRequestException, NotFoundException, SchedulerException, AlreadyExistsException {
     ApplicationId applicationId = new ApplicationId(namespaceId, appId, appVersion);
     ScheduleSpecification scheduleSpecFromRequest;
     try (Reader reader = new InputStreamReader(new ChannelBufferInputStream(request.getContent()), Charsets.UTF_8)) {

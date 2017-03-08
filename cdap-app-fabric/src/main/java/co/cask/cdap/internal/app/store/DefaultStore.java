@@ -741,27 +741,36 @@ public class DefaultStore implements Store {
 
   @Override
   public void addSchedule(final ProgramId program, final ScheduleSpecification scheduleSpecification,
-                          final boolean overwrite) {
-    Transactions.executeUnchecked(transactional, new TxRunnable() {
-      @Override
-      public void run(DatasetContext context) throws Exception {
-        AppMetadataStore metaStore = getAppMetadataStore(context);
-        ApplicationSpecification appSpec = getAppSpecOrFail(metaStore, program);
-        Map<String, ScheduleSpecification> existingSchedules = appSpec.getSchedules();
-        String scheduleName = scheduleSpecification.getSchedule().getName();
-        if (!overwrite && existingSchedules.containsKey(scheduleName)) {
-          throw new AlreadyExistsException(
-            new ScheduleId(program.getNamespace(), program.getApplication(), scheduleName));
-        }
+                          final boolean allowOverwrite) throws AlreadyExistsException {
+    try {
+      Transactions.executeUnchecked(transactional, new TxRunnable() {
+        @Override
+        public void run(DatasetContext context) throws Exception {
+          AppMetadataStore metaStore = getAppMetadataStore(context);
+          ApplicationSpecification appSpec = getAppSpecOrFail(metaStore, program);
+          Map<String, ScheduleSpecification> existingSchedules = appSpec.getSchedules();
+          String scheduleName = scheduleSpecification.getSchedule().getName();
+          if (!allowOverwrite && existingSchedules.containsKey(scheduleName)) {
+            throw new AlreadyExistsException(
+              new ScheduleId(program.getNamespace(), program.getApplication(), scheduleName));
+          }
 
-        Map<String, ScheduleSpecification> schedules = Maps.newHashMap(existingSchedules);
-        schedules.put(scheduleSpecification.getSchedule().getName(), scheduleSpecification);
-        ApplicationSpecification newAppSpec = new AppSpecificationWithChangedSchedules(appSpec, schedules);
-        metaStore.updateAppSpec(program.getNamespace(), program.getApplication(), program.getVersion(), newAppSpec);
-        LOG.debug("{} schedule for program {} - {}",
-                  existingSchedules.containsKey(scheduleName) ? "Added" : "Updated", program, scheduleSpecification);
+          Map<String, ScheduleSpecification> schedules = Maps.newHashMap(existingSchedules);
+          schedules.put(scheduleSpecification.getSchedule().getName(), scheduleSpecification);
+          ApplicationSpecification newAppSpec = new AppSpecificationWithChangedSchedules(appSpec, schedules);
+          metaStore.updateAppSpec(program.getNamespace(), program.getApplication(), program.getVersion(), newAppSpec);
+          LOG.debug("{} schedule for program {} - {}",
+                    existingSchedules.containsKey(scheduleName) ? "Added" : "Updated", program, scheduleSpecification);
+        }
+      });
+    } catch (Exception e) {
+      // Transactions.executeUnchecked wraps all exceptions in RuntimeException
+      if (e.getCause() instanceof AlreadyExistsException) {
+        throw (AlreadyExistsException) e.getCause();
+      } else {
+        throw e;
       }
-    });
+    }
   }
 
   @Override

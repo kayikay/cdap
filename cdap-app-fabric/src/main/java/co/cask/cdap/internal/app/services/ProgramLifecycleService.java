@@ -844,7 +844,7 @@ public class ProgramLifecycleService extends AbstractIdleService {
    * @throws SchedulerException on an exception when updating the schedule
    */
   public void updateSchedule(ApplicationId applicationId, ScheduleSpecification scheduleSpecUpdate)
-    throws NotFoundException, SchedulerException {
+    throws NotFoundException, SchedulerException, AlreadyExistsException {
     ApplicationSpecification appSpec = store.getApplication(applicationId);
     if (appSpec == null) {
       throw new ApplicationNotFoundException(applicationId);

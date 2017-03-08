@@ -50,6 +50,7 @@ import co.cask.cdap.api.workflow.NodeStatus;
 import co.cask.cdap.api.workflow.ScheduleProgramInfo;
 import co.cask.cdap.app.program.ProgramDescriptor;
 import co.cask.cdap.app.runtime.ProgramController;
+import co.cask.cdap.common.AlreadyExistsException;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.namespace.NamespaceAdmin;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
@@ -68,6 +69,7 @@ import co.cask.cdap.proto.id.Ids;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.ProgramId;
 import co.cask.cdap.proto.id.ProgramRunId;
+import co.cask.cdap.proto.id.ScheduleId;
 import co.cask.cdap.store.DefaultNamespaceStore;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
@@ -944,8 +946,10 @@ public class DefaultStoreTest {
     try {
       store.addSchedule(program.toEntityId(), scheduleWithSameNameSpec, false);
       Assert.fail("Should have thrown Exception because multiple schedules with the same name are being added.");
-    } catch (IllegalArgumentException ex) {
-      Assert.assertEquals("Schedule with the name 'Schedule2' already exists.", ex.getMessage());
+    } catch (AlreadyExistsException ex) {
+      ScheduleId expected = new ScheduleId(program.getNamespace().getId(), program.getApplication().getId(),
+                                           scheduleWithSameNameSpec.getSchedule().getName());
+      Assert.assertEquals(expected, ex.getObjectId());
     }
 
     store.deleteSchedule(program.toEntityId(), "Schedule2");
