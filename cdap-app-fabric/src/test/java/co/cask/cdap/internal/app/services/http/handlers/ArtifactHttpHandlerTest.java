@@ -618,8 +618,9 @@ public class ArtifactHttpHandlerTest extends AppFabricTestBase {
                                           plugins5Parents).getStatusLine().getStatusCode());
 
     // this call should throw IllegalArgumentException
-    callPluginMethod(pluginsId, "interactive", "aggregator", "throwException", "testString",
-                     ArtifactScope.USER, 400).getResponseBodyAsString();
+    String response = callPluginMethod(pluginsId, "interactive", "aggregator", "throwException", "testString",
+                                       ArtifactScope.USER, 400).getResponseBodyAsString();
+    Assert.assertEquals("Invalid user inputs: testString", response);
   }
 
   @Test
