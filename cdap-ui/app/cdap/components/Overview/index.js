@@ -29,10 +29,9 @@ require('./Overview.scss');
 export default class Overview extends Component {
   constructor(props) {
     super(props);
-    let {overviewEntity} = SearchStore.getState().search;
     this.state = {
       tag: null,
-      entity: overviewEntity,
+      entity: null,
       showOverview: false
     };
     this.typeToComponentMap = {
@@ -47,7 +46,7 @@ export default class Overview extends Component {
       let overviewEntity = searchState.overviewEntity;
       if (isNil(overviewEntity)) {
         this.setState({
-          entity: overviewEntity,
+          entity: null,
           showOverview: false,
           tag: null
         });

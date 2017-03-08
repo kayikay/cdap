@@ -24,7 +24,7 @@ import {isDescendant} from 'services/helpers';
 import Rx from 'rx';
 import SearchStore from 'components/EntityListView/SearchStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
-import {DEFAULT_SEARCH_SORT_OPTIONS} from 'components/EntityListView/SearchStore/SearchConstants';
+import {DEFAULT_SEARCH_SORT_OPTIONS, DEFAULT_SEARCH_QUERY} from 'components/EntityListView/SearchStore/SearchConstants';
 import {search, updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
 
 require('./EntityListHeader.scss');
@@ -146,7 +146,8 @@ export default class EntityListHeader extends Component {
     SearchStore.dispatch({
       type: SearchStoreActions.SETACTIVESORT,
       payload: {
-        activeSort: option
+        activeSort: option,
+        query: DEFAULT_SEARCH_QUERY
       }
     });
     this.setState({

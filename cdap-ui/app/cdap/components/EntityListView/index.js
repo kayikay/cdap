@@ -18,7 +18,7 @@ import React, {Component, PropTypes} from 'react';
 import SearchStore from 'components/EntityListView/SearchStore';
 import {search, updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
 import HomeListView from 'components/EntityListView/ListView';
-require('./EntityListView.scss');
+import MyUserStoreApi from 'api/userstore';
 import isNil from 'lodash/isNil';
 import classNames from 'classNames';
 import EntityListHeader from 'components/EntityListView/EntityListHeader';
@@ -37,11 +37,14 @@ import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import intersection from 'lodash/intersection';
 import {objectQuery} from 'services/helpers';
+import WelcomeScreen from 'components/EntityListView/WelcomeScreen';
 import {
   DEFAULT_SEARCH_FILTERS, DEFAULT_SEARCH_SORT,
   DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_SORT_OPTIONS,
   DEFAULT_SEARCH_PAGE_SIZE
 } from 'components/EntityListView/SearchStore/SearchConstants';
+
+require('./EntityListView.scss');
 
 export default class EntityListView extends Component {
   constructor(props) {
@@ -51,7 +54,9 @@ export default class EntityListView extends Component {
       loading: false,
       limit: DEFAULT_SEARCH_PAGE_SIZE,
       total: 0,
-      overview: true // Start showing spinner until we get a response from backend.
+      overview: true, // Start showing spinner until we get a response from backend.
+      userStoreObj: null,
+      showSplash: true
     };
     this.eventEmitter = ee(ee);
     // Maintaining a retryCounter outside the state as it doesn't affect the state/view directly.
@@ -62,6 +67,16 @@ export default class EntityListView extends Component {
     this.eventEmitter.on(globalEvents.STREAMCREATE, this.refreshSearchByCreationTime);
     this.eventEmitter.on(globalEvents.PUBLISHPIPELINE, this.refreshSearchByCreationTime);
     this.eventEmitter.on(globalEvents.ARTIFACTUPLOAD, this.refreshSearchByCreationTime);
+  }
+  componentWillMount() {
+    MyUserStoreApi.get().subscribe((res) => {
+      let userProperty = typeof res.property === 'object' ? res.property : {};
+      let showSplash = userProperty['user-has-visited'] || false;
+      this.setState({
+        userStoreObj : res,
+        showSplash : showSplash
+      });
+    });
   }
   componentDidMount() {
     this.searchStoreSubscription = SearchStore.subscribe(() => {
@@ -86,7 +101,11 @@ export default class EntityListView extends Component {
         element: document.getElementsByClassName('entity-list-view')
       }
     });
-    let queryObject = this.getQueryObject(this.props.location.query);
+    this.parseUrlAndUpdateStore();
+  }
+  parseUrlAndUpdateStore(nextProps) {
+    let props = nextProps || this.props;
+    let queryObject = this.getQueryObject(props.location.query);
     let pageSize = SearchStore.getState().search.limit;
     SearchStore.dispatch({
       type: SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE,
@@ -130,19 +149,7 @@ export default class EntityListView extends Component {
           }
         });
       }
-      let pageSize = SearchStore.getState().search.limit;
-      SearchStore.dispatch({
-        type: SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE,
-        payload: {
-          activeSort: queryObject.sort,
-          activeFilters: queryObject.filters,
-          query: queryObject.query,
-          currentPage: queryObject.page,
-          offset: (queryObject.page - 1) * pageSize,
-          overviewEntity: queryObject.overview
-        }
-      });
-      search();
+      this.parseUrlAndUpdateStore(nextProps);
     }
   }
   componentWillUnmount() {
@@ -247,6 +254,12 @@ export default class EntityListView extends Component {
     });
     search();
   }
+  dismissSplash() {
+    this.setState({
+      showSplash: true
+    });
+    this.parseUrlAndUpdateStore();
+  }
   render() {
     let namespace = NamespaceStore.getState().selectedNamespace;
     let searchState = SearchStore.getState();
@@ -255,6 +268,14 @@ export default class EntityListView extends Component {
     let searchText = searchState.search.query;
     let {statusCode:errorStatusCode, message:errorMessage } = searchState.search.error;
     let errorContent;
+
+    if (!this.state.showSplash) {
+      return (
+        <WelcomeScreen
+          onClose={this.dismissSplash.bind(this)}
+        />
+      );
+    }
     if (!isNil(errorStatusCode)) {
       if (errorStatusCode === 'PAGE_NOT_FOUND') {
         errorContent = (
@@ -279,13 +300,18 @@ export default class EntityListView extends Component {
       <div>
         <EntityListHeader />
         <div className="entity-list-view">
-          <EntityListInfo
-            className="entity-list-info"
-            namespace={namespace}
-            numberOfEntities={this.state.total}
-            numberOfPages={this.state.total / this.state.limit}
-            currentPage={currentPage}
-          />
+          {
+            !isNil(errorContent) ?
+              null
+            :
+              <EntityListInfo
+                className="entity-list-info"
+                namespace={namespace}
+                numberOfEntities={this.state.total}
+                numberOfPages={this.state.total / this.state.limit}
+                currentPage={currentPage}
+              />
+          }
           <div className="entities-container">
             {
               !isNil(errorContent) ?

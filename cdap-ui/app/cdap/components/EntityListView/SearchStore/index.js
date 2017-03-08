@@ -121,19 +121,23 @@ const search = (state = defaultSearchState, action = defaultAction) => {
     }
     case SearchStoreActions.SETACTIVEFILTERS:
       return Object.assign({}, state, {
-        activeFilters: action.payload.activeFilters
+        activeFilters: action.payload.activeFilters,
+        overviewEntity: null
       });
     case SearchStoreActions.SETACTIVESORT:
       if (isNil(action.payload.activeSort)) {
         return state;
       }
       return Object.assign({}, state, {
-        activeSort: action.payload.activeSort
+        activeSort: action.payload.activeSort,
+        overviewEntity: null,
+        query: action.payload.query || state.query
       });
     case SearchStoreActions.SETQUERY:
       return Object.assign({}, state, {
         query: action.payload.query === '' ? '*' : action.payload.query,
-        activeSort: action.payload.query !== '*' ? DEFAULT_SEARCH_SORT_OPTIONS[0] : state.activeSort
+        activeSort: action.payload.query !== '*' ? DEFAULT_SEARCH_SORT_OPTIONS[0] : state.activeSort,
+        overviewEntity: ['', '*'].indexOf(action.payload.query) !== -1 ? state.overviewEntity : null
       });
     case SearchStoreActions.LOADING:
       return Object.assign({}, state, {
