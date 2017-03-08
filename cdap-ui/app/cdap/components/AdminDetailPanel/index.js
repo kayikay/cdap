@@ -52,7 +52,7 @@ class AdminDetailPanel extends Component {
         Object.keys(this.props.serviceData[key]).map((item) => {
           let humanReadableNum;
 
-          if (key === 'storage' || key === 'memory') {
+          if (key === 'storage' || key === 'resources') {
             humanReadableNum = humanReadableNumber(this.props.serviceData[key][item], 'STORAGE');
           } else {
             humanReadableNum = humanReadableNumber(this.props.serviceData[key][item]);
