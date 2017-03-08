@@ -23,7 +23,8 @@ import NoEntitiesMessage from 'components/EntityListView/NoEntitiesMessage';
 import SearchStore from 'components/EntityListView/SearchStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
 import ListViewHeader from 'components/EntityListView/ListViewHeader';
-import {updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
+import {search, updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
+import {DEFAULT_SEARCH_SORT_OPTIONS, DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_FILTERS} from 'components/EntityListView/SearchStore/SearchConstants';
 import isNil from 'lodash/isNil';
 
 export default class HomeListView extends Component {
@@ -56,8 +57,12 @@ export default class HomeListView extends Component {
   render() {
     let content;
     let searchState = SearchStore.getState().search;
+    let query = searchState.query;
+    let activeFilters = searchState.activeFilters;
+    let filterOptions = searchState.filters;
     let overviewEntity = searchState.overviewEntity;
     let overviewEntityFromResults;
+
     if (isNil(overviewEntity)) {
       overviewEntityFromResults = {};
     } else {
@@ -73,9 +78,24 @@ export default class HomeListView extends Component {
 
     if (!this.state.loading && !this.state.list.length) {
       content = <NoEntitiesMessage
-                  searchText={this.props.searchText}
-                  filtersAreApplied={this.filtersAreApplied.bind(this)}
-                  clearSearchAndFilters={this.clearSearchAndFilters.bind(this)}
+                  searchText={query}
+                  filtersAreApplied={() => activeFilters.length > 0 && activeFilters.length < filterOptions.length}
+                  clearSearchAndFilters={() => {
+                    let searchState = SearchStore.getState().search;
+                    SearchStore.dispatch({
+                      type: SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE,
+                      payload: {
+                        query: DEFAULT_SEARCH_QUERY,
+                        activeSort: DEFAULT_SEARCH_SORT_OPTIONS[4],
+                        activeFilters: DEFAULT_SEARCH_FILTERS,
+                        currentPage: 1,
+                        offset: searchState.offset,
+                        overviewEntity: null
+                      }
+                    });
+                    search();
+                    updateQueryString();
+                  }}
                 />;
 
     }
