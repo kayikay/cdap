@@ -38,6 +38,7 @@ import isEmpty from 'lodash/isEmpty';
 import intersection from 'lodash/intersection';
 import {objectQuery} from 'services/helpers';
 import WelcomeScreen from 'components/EntityListView/WelcomeScreen';
+import classnames from 'classnames';
 import {
   DEFAULT_SEARCH_FILTERS, DEFAULT_SEARCH_SORT,
   DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_SORT_OPTIONS,
@@ -312,7 +313,7 @@ export default class EntityListView extends Component {
                 currentPage={currentPage}
               />
           }
-          <div className="entities-container">
+          <div className={classnames("entities-container", {'error-holder': errorContent})}>
             {
               !isNil(errorContent) ?
                 errorContent

@@ -34,6 +34,11 @@
     flex-wrap: wrap;
     width: 100%;
 
+    &.error-holder {
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+    }
     .entities-all-list-container {
       display: inline-flex;
       flex-wrap: wrap;
