@@ -173,8 +173,11 @@ const search = (state = defaultSearchState, action = defaultAction) => {
         activeSort: action.payload.query !== '*' ? DEFAULT_SEARCH_SORT_OPTIONS[0] : action.payload.activeSort,
         activeFilters: action.payload.activeFilters,
         currentPage: action.payload.currentPage,
-        offset: action.payload.offset
+        offset: action.payload.offset,
+        overviewEntity: action.payload.overviewEntity
       });
+    case SearchStoreActions.RESETSTORE:
+      return defaultSearchState;
     default:
       return state;
   }

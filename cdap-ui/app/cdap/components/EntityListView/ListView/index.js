@@ -23,14 +23,15 @@ import NoEntitiesMessage from 'components/EntityListView/NoEntitiesMessage';
 import SearchStore from 'components/EntityListView/SearchStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
 import ListViewHeader from 'components/EntityListView/ListViewHeader';
+import {updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
+import isNil from 'lodash/isNil';
 
 export default class HomeListView extends Component {
   constructor(props) {
     super(props);
     this.state = {
       loading: this.props.loading || false,
-      list: this.props.list || [],
-      selectedEntity: {}
+      list: this.props.list || []
     };
   }
 
@@ -40,18 +41,28 @@ export default class HomeListView extends Component {
       loading: nextProps.loading
     });
   }
-
   onClick(entity) {
     SearchStore.dispatch({
       type: SearchStoreActions.SETOVERVIEWENTITY,
       payload: {
-        overviewEntity: entity
+        overviewEntity: {
+          id: entity.id,
+          type: entity.type
+        }
       }
     });
+    updateQueryString();
   }
   render() {
     let content;
-    let overviewEntity = SearchStore.getState().search.overviewEntity;
+    let searchState = SearchStore.getState().search;
+    let overviewEntity = searchState.overviewEntity;
+    let overviewEntityFromResults;
+    if (isNil(overviewEntity)) {
+      overviewEntityFromResults = {};
+    } else {
+      overviewEntityFromResults = searchState.results.find(entity => entity.id === overviewEntity.id && entity.type === overviewEntity.type);
+    }
     if (this.state.loading) {
       content = (
         <h3 className="text-xs-center">
@@ -74,7 +85,7 @@ export default class HomeListView extends Component {
           <EntityCard
             className={
               classnames('entity-card-container',
-                { active: entity.uniqueId === objectQuery(overviewEntity, 'uniqueId') }
+                { active: entity.uniqueId === objectQuery(overviewEntityFromResults, 'uniqueId') }
               )
             }
             id={entity.uniqueId}

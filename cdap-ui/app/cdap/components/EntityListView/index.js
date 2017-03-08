@@ -35,7 +35,12 @@ import Overview from 'components/Overview';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import intersection from 'lodash/intersection';
-import {DEFAULT_SEARCH_FILTERS, DEFAULT_SEARCH_SORT, DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_SORT_OPTIONS, DEFAULT_SEARCH_PAGE_SIZE} from 'components/EntityListView/SearchStore/SearchConstants';
+import {objectQuery} from 'services/helpers';
+import {
+  DEFAULT_SEARCH_FILTERS, DEFAULT_SEARCH_SORT,
+  DEFAULT_SEARCH_QUERY, DEFAULT_SEARCH_SORT_OPTIONS,
+  DEFAULT_SEARCH_PAGE_SIZE
+} from 'components/EntityListView/SearchStore/SearchConstants';
 
 export default class EntityListView extends Component {
   constructor(props) {
@@ -59,7 +64,13 @@ export default class EntityListView extends Component {
   }
   componentDidMount() {
     this.searchStoreSubscription = SearchStore.subscribe(() => {
-      let {results:entities, loading, limit, total, overviewEntity} = SearchStore.getState().search;
+      let {
+        results:entities,
+        loading,
+        limit,
+        total,
+        overviewEntity,
+      } = SearchStore.getState().search;
       this.setState({
         entities,
         loading,
@@ -83,7 +94,8 @@ export default class EntityListView extends Component {
         activeFilters: queryObject.filters,
         query: queryObject.query,
         currentPage: queryObject.page,
-        offset: (queryObject.page - 1) * pageSize
+        offset: (queryObject.page - 1) * pageSize,
+        overviewEntity: queryObject.overview
       }
     });
     search();
@@ -104,7 +116,9 @@ export default class EntityListView extends Component {
         !isEqual(queryObject.filters, searchState.activeFilters) ||
         queryObject.sort.fullSort !== searchState.activeSort.fullSort ||
         queryObject.query !== searchState.query ||
-        queryObject.page !== searchState.currentPage
+        queryObject.page !== searchState.currentPage ||
+        objectQuery(queryObject, 'overview', 'id') !== objectQuery(searchState, 'overviewEntity', 'id') ||
+        objectQuery(queryObject, 'overview', 'type') !== objectQuery(searchState, 'overviewEntity', 'type')
       )
     ) {
       let pageSize = SearchStore.getState().search.limit;
@@ -115,13 +129,17 @@ export default class EntityListView extends Component {
           activeFilters: queryObject.filters,
           query: queryObject.query,
           currentPage: queryObject.page,
-          offset: (queryObject.page - 1) * pageSize
+          offset: (queryObject.page - 1) * pageSize,
+          overviewEntity: queryObject.overview
         }
       });
       search();
     }
   }
   componentWillUnmount() {
+    SearchStore.dispatch({
+      type: SearchStoreActions.RESETSTORE
+    });
     if (this.searchStoreSubscription) {
       this.searchStoreSubscription();
     }
@@ -148,7 +166,15 @@ export default class EntityListView extends Component {
     if (isNil(query)) {
       query = {};
     }
-    let {q = '*', sort=DEFAULT_SEARCH_SORT.sort, order=DEFAULT_SEARCH_SORT.order, filter=DEFAULT_SEARCH_FILTERS, page=1} = query;
+    let {
+      q = '*',
+      sort=DEFAULT_SEARCH_SORT.sort,
+      order=DEFAULT_SEARCH_SORT.order,
+      filter=DEFAULT_SEARCH_FILTERS,
+      page=1,
+      overviewid = null,
+      overviewtype = null
+    } = query;
     const getSort = (sortOption, order, q) => {
       let isValidSortOption = DEFAULT_SEARCH_SORT_OPTIONS.find(sortOpt => sortOpt.sort === sortOption && sortOpt.order === order);
       if (!isValidSortOption) {
@@ -181,11 +207,21 @@ export default class EntityListView extends Component {
       }
       return q;
     };
+    const getOverviewEntity = (overviewid, overviewtype) => {
+      if (!isNil(overviewid) && !isNil(overviewtype)) {
+        return {
+          id: overviewid,
+          type: overviewtype
+        };
+      }
+      return null;
+    };
     let queryObject = {
       sort: getSort(sort, order, q),
       filters: getFilters(filter),
       page: getPageNum(page),
-      query: getSearchQuery(q)
+      query: getSearchQuery(q),
+      overview: getOverviewEntity(overviewid, overviewtype)
     };
     return queryObject;
   }

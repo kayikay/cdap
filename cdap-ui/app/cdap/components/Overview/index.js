@@ -23,6 +23,7 @@ import isNil from 'lodash/isNil';
 import classnames from 'classnames';
 import SearchStore from 'components/EntityListView/SearchStore';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
+import {updateQueryString} from 'components/EntityListView/SearchStore/ActionCreator';
 require('./Overview.scss');
 
 export default class Overview extends Component {
@@ -41,24 +42,56 @@ export default class Overview extends Component {
     };
   }
   componentWillMount() {
-    SearchStore.subscribe(() => {
+    this.searchStoreSubscription = SearchStore.subscribe(() => {
       let searchState = SearchStore.getState().search;
       let overviewEntity = searchState.overviewEntity;
-      if (!isNil(overviewEntity) && overviewEntity.id !== objectQuery(this.state, 'entity', 'id')) {
+      if (isNil(overviewEntity)) {
         this.setState({
           entity: overviewEntity,
-          showOverview: true,
-          tag: this.typeToComponentMap[objectQuery(overviewEntity, 'type')]
+          showOverview: false,
+          tag: null
         });
+        return;
+      }
+      if (overviewEntity.id !== objectQuery(this.state, 'entity', 'id')) {
+        let entity = searchState.results.find(searchEntitiy => searchEntitiy.id === overviewEntity.id && searchEntitiy.type === overviewEntity.type);
+        if (!isNil(entity)) {
+          this.setState({
+            entity,
+            showOverview: true,
+            tag: this.typeToComponentMap[objectQuery(overviewEntity, 'type')]
+          });
+        }
       }
     });
   }
+  componentDidMount() {
+    if (isNil(this.state.entity) || !objectQuery(this.state, 'entity', 'uniqueId')) {
+      return;
+    }
+    let el = document.getElementById(this.state.entity.uniqueId);
+    if (isNil(el)) {
+      return;
+    }
+    let paginationContainer = document.querySelector('.entity-list-view');
+    el.scrollIntoView();
+    paginationContainer.scrollTop -= 63;
+  }
   componentDidUpdate() {
-    if (this.state.entity) {
-      let el = document.getElementById(this.state.entity.uniqueId);
-      let paginationContainer = document.querySelector('.entity-list-view');
-      el.scrollIntoView();
-      paginationContainer.scrollTop -= 63;
+    if (isNil(this.state.entity) || !objectQuery(this.state, 'entity', 'uniqueId')) {
+      return;
+    }
+    let el = document.getElementById(this.state.entity.uniqueId);
+    if (isNil(el)) {
+      return;
+    }
+    let paginationContainer = document.querySelector('.entity-list-view');
+    el.scrollIntoView();
+    paginationContainer.scrollTop -= 63;
+  }
+  componentWillUnmount() {
+    if (this.searchStoreSubscription) {
+      this.searchStoreSubscription();
     }
   }
   hideOverview() {
@@ -68,6 +101,7 @@ export default class Overview extends Component {
     SearchStore.dispatch({
       type: SearchStoreActions.RESETOVERVIEWENTITY
     });
+    updateQueryString();
   }
   closeAndRefresh(action) {
     this.hideOverview();

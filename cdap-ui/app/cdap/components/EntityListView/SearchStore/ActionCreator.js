@@ -24,6 +24,7 @@ import ExploreTablesStore from 'services/ExploreTables/ExploreTablesStore';
 import {fetchTables} from 'services/ExploreTables/ActionCreator';
 import {DEFAULT_SEARCH_QUERY} from 'components/EntityListView/SearchStore/SearchConstants';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
+import isNil from 'lodash/isNil';
 
 const search = () => {
   let namespace = NamespaceStore.getState().selectedNamespace;
@@ -114,7 +115,7 @@ const updateQueryString = () => {
   let queryParams = [];
 
   let searchState = SearchStore.getState().search;
-  let {activeSort, activeFilters, query:searchQuery, currentPage} = searchState;
+  let {activeSort, activeFilters, query:searchQuery, currentPage, overviewEntity} = searchState;
 
   // Generate sort params
   if (activeSort.sort !== 'none') {
@@ -146,12 +147,14 @@ const updateQueryString = () => {
     queryString = '?' + queryString;
   }
 
+  if (!isNil(overviewEntity)) {
+    queryString += `&overviewid=${overviewEntity.id}&overviewtype=${overviewEntity.type}`;
+  }
+
   let obj = {
     title: 'CDAP',
     url: location.pathname + queryString
   };
-
-  console.trace('Updating url');
 
   // Modify URL to match application state
   history.pushState(obj, obj.title, obj.url);
