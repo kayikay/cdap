@@ -24,6 +24,7 @@ import classNames from 'classNames';
 import EntityListHeader from 'components/EntityListView/EntityListHeader';
 import EntityListInfo from 'components/EntityListView/EntityListInfo';
 import NamespaceStore from 'services/NamespaceStore';
+import NamespaceActions from 'services/NamespaceStore/NamespaceActions';
 import SearchStoreActions from 'components/EntityListView/SearchStore/SearchStoreActions';
 import globalEvents from 'services/global-events';
 import ee from 'event-emitter';
@@ -121,6 +122,14 @@ export default class EntityListView extends Component {
         objectQuery(queryObject, 'overview', 'type') !== objectQuery(searchState, 'overviewEntity', 'type')
       )
     ) {
+      if ((nextProps.params.namespace !== this.props.params.namespace)) {
+        NamespaceStore.dispatch({
+          type: NamespaceActions.selectNamespace,
+          payload: {
+            selectedNamespace: nextProps.params.namespace
+          }
+        });
+      }
       let pageSize = SearchStore.getState().search.limit;
       SearchStore.dispatch({
         type: SearchStoreActions.SETSORTFILTERSEARCHCURRENTPAGE,

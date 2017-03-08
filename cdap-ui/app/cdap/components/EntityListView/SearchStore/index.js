@@ -146,7 +146,8 @@ const search = (state = defaultSearchState, action = defaultAction) => {
     case SearchStoreActions.SETCURRENTPAGE:
       return Object.assign({}, state, {
         currentPage: action.payload.currentPage,
-        offset: action.payload.offset
+        offset: action.payload.offset,
+        overviewEntity: null
       });
     case SearchStoreActions.RESETERROR:
       return Object.assign({}, state, {
